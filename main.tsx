@@ -12,7 +12,7 @@ const SplashScreen = ({ onComplete }) => {
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const THEME_ACCENT = "#0066FF";
+  const THEME_ACCENT = "#F97316";
 
   return (
     <div

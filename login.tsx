@@ -1,8 +1,8 @@
 import React from "react";
 
 const THEME = {
-  accent: "#0066FF",
-  primary: "#1A1A1A",
+  accent: "#F97316",
+  primary: "#7C2D12",
   text: "#333333",
   textLight: "#666666",
   border: "#DEDEDE",
@@ -32,7 +32,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
         .login-btn { transition: all 0.2s ease; }
         .login-btn:hover { 
           transform: translateY(-2px); 
-          box-shadow: 0 8px 24px rgba(0, 102, 255, 0.2);
+          box-shadow: 0 8px 24px rgba(249, 115, 22, 0.2);
         }
       `}</style>
 
@@ -42,7 +42,7 @@ export const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
           top: "20%",
           width: "600px",
           height: "400px",
-          background: `linear-gradient(180deg, rgba(0,102,255,0.03) 0%, rgba(0,102,255,0) 100%)`,
+          background: `linear-gradient(180deg, rgba(249,115,22,0.03) 0%, rgba(249,115,22,0) 100%)`,
           transform: "skewY(-12deg)",
           borderRadius: "40px",
           filter: "blur(40px)",
@@ -64,13 +64,13 @@ export const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
           style={{
             width: "80px",
             height: "80px",
-            background: `linear-gradient(135deg, ${THEME.accent} 0%, #003366 100%)`,
+            background: `linear-gradient(135deg, ${THEME.accent} 0%, #7C2D12 100%)`,
             borderRadius: "20px",
             margin: "0 auto 32px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: `0 20px 60px rgba(0, 102, 255, 0.1)`,
+            boxShadow: `0 20px 60px rgba(249, 115, 22, 0.1)`,
           }}
         >
           <svg

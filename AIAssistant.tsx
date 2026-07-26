@@ -187,10 +187,10 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ resume, setResume, col
                     width: '60px',
                     height: '60px',
                     borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${colors.accent}, #0044aa)`,
+                    background: `linear-gradient(135deg, ${colors.accent}, #7C2D12)`,
                     color: 'white',
                     border: 'none',
-                    boxShadow: '0 4px 20px rgba(0, 102, 255, 0.4)',
+                    boxShadow: '0 4px 20px rgba(249, 115, 22, 0.4)',
                     cursor: 'pointer',
                     zIndex: 1000,
                     display: 'flex',
@@ -233,7 +233,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ resume, setResume, col
                     {/* Header */}
                     <div style={{
                         padding: '16px',
-                        background: `linear-gradient(135deg, ${colors.accent}, #0044aa)`,
+                        background: `linear-gradient(135deg, ${colors.accent}, #7C2D12)`,
                         color: 'white',
                         display: 'flex',
                         alignItems: 'center',

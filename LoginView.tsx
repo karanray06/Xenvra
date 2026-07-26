@@ -84,7 +84,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             style={{
               width: "48px",
               height: "48px",
-              background: "linear-gradient(135deg, #3498DB 0%, #2C3E50 100%)",
+              background: "linear-gradient(135deg, #F97316 0%, #7C2D12 100%)",
               borderRadius: "12px",
               display: "flex",
               alignItems: "center",
@@ -157,7 +157,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
               <span>Unlimited Resume Edits</span>
             </div>
             <div className="feature-item">
-              <Shield size={20} color="#3498DB" />
+              <Shield size={20} color="#F97316" />
               <span>Secure Cloud Storage</span>
             </div>
             <div className="feature-item">

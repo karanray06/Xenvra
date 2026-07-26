@@ -75,10 +75,10 @@ interface ResumeData {
 // --- Colors ---
 
 const colors = {
-  primary: "#2C3E50",
-  secondary: "#34495E",
-  accent: "#3498DB",
-  accentDark: "#2980B9",
+  primary: "#7C2D12",
+  secondary: "#9A3412",
+  accent: "#F97316",
+  accentDark: "#EA580C",
   background: "#F8FAFC",
   surface: "#FFFFFF",
   border: "#E2E8F0",
@@ -634,7 +634,7 @@ const HomeView = ({ setCurrentView }: any) => {
   font-weight: 600; font-size: 18px; border: none; cursor: pointer; transition: all 0.2s;
   display: inline-flex; align-items: center; gap: 8px;
 }
-          .btn-primary:hover { background: ${colors.accentDark}; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3); }
+          .btn-primary:hover { background: ${colors.accentDark}; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3); }
           .step-number {
   width: 40px; height: 40px; background: ${colors.accent}20; color: ${colors.accent};
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -659,7 +659,7 @@ const HomeView = ({ setCurrentView }: any) => {
             style={{
               display: "inline-block",
               padding: "6px 16px",
-              background: "#EFF6FF",
+              background: "#FFF7ED",
               color: colors.accent,
               borderRadius: "20px",
               fontSize: "14px",
