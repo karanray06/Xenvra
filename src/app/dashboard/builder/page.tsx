@@ -1,19 +1,38 @@
-import { FileText } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { BuilderClient } from "@/components/builder/builder-client";
 
-export default function BuilderPage() {
+export default async function BuilderPage(props: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const searchParams = await props.searchParams;
+  const resumeId = searchParams.id || null;
+
+  let resume = null;
+  if (resumeId) {
+    const { data } = await supabase
+      .from("resumes")
+      .select("*")
+      .eq("id", resumeId)
+      .eq("user_id", user.id)
+      .single();
+    resume = data;
+  }
+
   return (
-    <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50">
-          <FileText className="h-8 w-8 text-accent" />
-        </div>
-        <h2 className="mb-2 text-xl font-semibold text-text-primary">
-          Resume Builder
-        </h2>
-        <p className="text-sm text-text-secondary">
-          The full editor with templates, live preview, and AI assistance is coming in Phase 2.
-        </p>
-      </div>
-    </div>
+    <BuilderClient
+      userId={user.id}
+      initialId={resume?.id || null}
+      initialTitle={resume?.title || "Untitled Resume"}
+      initialTemplateId={resume?.template_id || "modern-1"}
+      initialData={resume?.data || null}
+    />
   );
 }
