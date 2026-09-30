@@ -65,7 +65,10 @@ export function ResumeProvider({
   const supabase = createClient();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   // Debounced autosave
   const triggerSave = useCallback(() => {

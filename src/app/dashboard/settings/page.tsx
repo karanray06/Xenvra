@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Settings, User, CreditCard } from "lucide-react";
+import { User, CreditCard } from "lucide-react";
 
 export default async function SettingsPage() {
   const supabase = await createClient();

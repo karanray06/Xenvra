@@ -13,7 +13,6 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useState } from "react";
-import type { Experience, Education, Project, Certification } from "@/lib/schemas/resume";
 
 function genId() {
   return Math.random().toString(36).slice(2, 10);
