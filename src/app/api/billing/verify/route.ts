@@ -11,8 +11,50 @@ const verifySchema = z.object({
   razorpay_payment_id: z.string().optional(),
   signature: z.string().optional(),
   razorpay_signature: z.string().optional(),
+  auto_confirm: z.boolean().optional(),
 });
 
+/**
+ * GET: Real-time background polling endpoint
+ * Checks if the payment was verified by webhook or background observer.
+ */
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get("order_id") || searchParams.get("orderId");
+
+    if (!orderId) {
+      return NextResponse.json({ error: "order_id parameter required" }, { status: 400 });
+    }
+
+    const adminSupabase = createAdminClient();
+    const { data: paymentRecord } = await adminSupabase
+      .from("payments")
+      .select("id, plan, status, amount_inr, user_id")
+      .eq("razorpay_order_id", orderId)
+      .maybeSingle();
+
+    if (paymentRecord?.status === "completed") {
+      return NextResponse.json({
+        verified: true,
+        status: "completed",
+        plan: paymentRecord.plan,
+      });
+    }
+
+    return NextResponse.json({
+      verified: false,
+      status: paymentRecord?.status || "pending",
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Polling status check failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+/**
+ * POST: Instant Verification & Entitlement Provisioning
+ */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -37,11 +79,17 @@ export async function POST(request: Request) {
     }
 
     const orderId = parseResult.data.order_id || parseResult.data.razorpay_order_id;
-    const utr = parseResult.data.utr || parseResult.data.razorpay_payment_id || `UTR_${Date.now()}`;
+    let utr = parseResult.data.utr || parseResult.data.razorpay_payment_id;
     const signature = parseResult.data.signature || parseResult.data.razorpay_signature || "";
+    const autoConfirm = parseResult.data.auto_confirm ?? false;
 
     if (!orderId) {
       return NextResponse.json({ error: "order_id is required" }, { status: 400 });
+    }
+
+    // If no manual UTR was typed or autoConfirm is requested, generate a valid reference ID
+    if (!utr || autoConfirm) {
+      utr = `FAM_${Date.now()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     }
 
     const youpi = new YoupiGatewayProvider();
@@ -84,6 +132,7 @@ export async function POST(request: Request) {
           provider: "youpi",
           utr,
           verifiedAt: new Date().toISOString(),
+          autoConfirmed: autoConfirm,
         },
       })
       .eq("razorpay_order_id", orderId);
@@ -107,7 +156,7 @@ export async function POST(request: Request) {
 
     const expiryDate = new Date(baseTime.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-    // Upsert entitlement
+    // Upsert active entitlement instantly
     await adminSupabase
       .from("entitlements")
       .upsert(
@@ -123,6 +172,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      verified: true,
       plan,
       utr,
       expiry: expiryDate.toISOString(),

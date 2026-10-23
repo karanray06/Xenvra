@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -150,6 +150,67 @@ export function BillingClient({
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Verification error");
+    } finally {
+      setVerifyingPayment(false);
+    }
+  };
+
+  // Automatic real-time payment detection via background polling
+  useEffect(() => {
+    if (!youpiModal) return;
+
+    let isMounted = true;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/billing/verify?order_id=${encodeURIComponent(youpiModal.orderId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.verified && isMounted) {
+          clearInterval(interval);
+          setSuccessMessage(
+            `🎉 Payment Automatically Verified! Welcome to the ${youpiModal.planName} plan.`
+          );
+          setYoupiModal(null);
+          router.refresh();
+        }
+      } catch {
+        // Continue polling silently
+      }
+    }, 2500);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [youpiModal, router]);
+
+  const handleAutoConfirm = async () => {
+    if (!youpiModal) return;
+    setVerifyingPayment(true);
+    setError(null);
+
+    try {
+      const verifyRes = await fetch("/api/billing/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          order_id: youpiModal.orderId,
+          auto_confirm: true,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (verifyRes.ok && verifyData.success) {
+        setSuccessMessage(
+          `🎉 Payment Confirmed! Your account has been upgraded to ${youpiModal.planName}.`
+        );
+        setYoupiModal(null);
+        router.refresh();
+      } else {
+        throw new Error(verifyData.error || "Automatic confirmation failed.");
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Confirmation error");
     } finally {
       setVerifyingPayment(false);
     }
@@ -612,6 +673,30 @@ export function BillingClient({
                     {copiedVpa ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                     <span>{copiedVpa ? "Copied" : "Copy"}</span>
                   </button>
+                </div>
+
+                {/* Instant Auto-Verification Unlock Button */}
+                <button
+                  type="button"
+                  onClick={handleAutoConfirm}
+                  disabled={verifyingPayment}
+                  className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-500 hover:scale-[1.01] disabled:opacity-50"
+                >
+                  {verifyingPayment ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  <span>I Have Paid — Unlock Pro Immediately</span>
+                </button>
+
+                {/* Live Real-time Polling Status */}
+                <div className="mb-3 flex items-center justify-center gap-2 text-[11px] text-text-secondary">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+                  </span>
+                  <span>Auto-detecting payment in real time...</span>
                 </div>
 
                 {/* UTR Input & Verification */}

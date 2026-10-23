@@ -92,11 +92,7 @@ function Hero() {
       <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-brand-50/60 blur-3xl" />
 
       <div className="relative mx-auto max-w-screen-xl px-4 text-center sm:px-6 lg:px-8">
-        {/* Badge */}
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-accent">
-          <Sparkles className="h-4 w-4" />
-          AI-Powered Resume Builder
-        </div>
+
 
         {/* Headline */}
         <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-5xl md:text-6xl lg:text-7xl">
