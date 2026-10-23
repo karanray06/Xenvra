@@ -1,0 +1,75 @@
+/* Xenvra brand tokens — drop into src/app/globals.css (replaces the orange @theme block).
+   Core palette (the 4 brand colours):
+     Ice Silver      #E6EEF4
+     Mocha Brown     #5A4032
+     Platinum Silver #C9CCD1
+     Pale Lavender   #DCD3F2
+   Everything else is a tint/shade derived from those four, so existing class names
+   (bg-accent, text-text-primary, bg-brand-50 ...) keep working and re-theme automatically. */
+
+@theme inline {
+  /* Mocha scale (brand-600 = Mocha Brown) */
+  --color-brand-50:  #F6F1EE;
+  --color-brand-100: #EBE0DA;
+  --color-brand-200: #D8C4B9;
+  --color-brand-300: #BFA08F;
+  --color-brand-400: #9C7762;
+  --color-brand-500: #7A5744;
+  --color-brand-600: #5A4032;
+  --color-brand-700: #47322A;
+  --color-brand-800: #352520;
+  --color-brand-900: #241915;
+  --color-brand-950: #150E0C;
+
+  /* Lavender scale (lav-200 = Pale Lavender) */
+  --color-lav-50:  #F8F6FD;
+  --color-lav-100: #EEEAF9;
+  --color-lav-200: #DCD3F2;
+  --color-lav-300: #C9BCEA;
+  --color-lav-400: #B9A9E3;
+  --color-lav-600: #7B66B8;
+
+  /* Ice + Platinum */
+  --color-ice-50:  #F5F9FB;
+  --color-ice-100: #E6EEF4;
+  --color-ice-200: #D5E1EA;
+  --color-platinum-100: #E3E5E8;
+  --color-platinum-200: #C9CCD1;
+  --color-platinum-400: #8A8F98;
+
+  /* Semantic aliases */
+  --color-accent: var(--color-brand-600);
+  --color-accent-hover: var(--color-brand-700);
+  --color-accent-soft: var(--color-lav-200);
+  --color-primary: var(--color-brand-800);
+  --color-primary-hover: var(--color-brand-950);
+
+  /* Neutrals (warm-cool balance: ice surfaces, platinum borders, mocha-ink text) */
+  --color-surface: #FFFFFF;
+  --color-surface-secondary: var(--color-ice-50);
+  --color-surface-tertiary: var(--color-ice-100);
+  --color-border: var(--color-platinum-100);
+  --color-border-strong: var(--color-platinum-200);
+  --color-text-primary: #241915;
+  --color-text-secondary: #5E534D;
+  --color-text-tertiary: #6F747C;   /* >=4.5:1 on white; use platinum-400 only for decoration */
+  --color-text-inverse: #F5F9FB;
+
+  /* Feedback — kept desaturated to sit inside the palette */
+  --color-success: #2F7D5B;
+  --color-success-light: #EAF5F0;
+  --color-warning: #A8741A;
+  --color-warning-light: #FBF3E3;
+  --color-danger: #B3372F;
+  --color-danger-light: #FBEDEC;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Focus ring: lavender halo + mocha core, visible on both ice and white */
+*:focus-visible {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--color-lav-200);
+}
