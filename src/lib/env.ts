@@ -10,10 +10,13 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().optional(),
   VERCEL_URL: z.string().optional(),
-  RAZORPAY_KEY_ID: z.string().optional(),
-  RAZORPAY_KEY_SECRET: z.string().optional(),
-  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
-  NEXT_PUBLIC_RAZORPAY_KEY_ID: z.string().optional(),
+  GROQ_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_YOUPI_UPI_VPA: z.string().optional(),
+  NEXT_PUBLIC_YOUPI_MERCHANT_NAME: z.string().optional(),
+  YOUPI_API_URL: z.string().optional(),
+  YOUPI_MERCHANT_ID: z.string().optional(),
+  YOUPI_WEBHOOK_SECRET: z.string().optional(),
   CRON_SECRET: z.string().optional(),
 });
 
@@ -24,16 +27,18 @@ export function validateEnv() {
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     VERCEL_URL: process.env.VERCEL_URL,
-    RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
-    RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
-    RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
-    NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+    GROQ_API_KEY: process.env.GROQ_API_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    NEXT_PUBLIC_YOUPI_UPI_VPA: process.env.NEXT_PUBLIC_YOUPI_UPI_VPA,
+    NEXT_PUBLIC_YOUPI_MERCHANT_NAME: process.env.NEXT_PUBLIC_YOUPI_MERCHANT_NAME,
+    YOUPI_API_URL: process.env.YOUPI_API_URL,
+    YOUPI_MERCHANT_ID: process.env.YOUPI_MERCHANT_ID,
+    YOUPI_WEBHOOK_SECRET: process.env.YOUPI_WEBHOOK_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
   });
 
   if (!result.success) {
     console.error("❌ Environment variable validation failed:", result.error.format());
-    // Only throw in runtime if required public variables are missing
     if (process.env.NODE_ENV === "production") {
       throw new Error(`Invalid environment variables: ${JSON.stringify(result.error.format())}`);
     }

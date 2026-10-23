@@ -24,7 +24,7 @@ export default function RefundPage() {
         <p>You may request a full refund within 48 hours of purchase if you have not used any paid features (template unlocks, AI actions beyond free tier, or PDF exports without watermark).</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">How to Request a Refund</h2>
-        <p>Email <a href="mailto:xenvra.official@gmail.com" className="text-accent hover:underline">xenvra.official@gmail.com</a> with your registered email and Razorpay payment ID. Refunds are processed within 5-7 business days.</p>
+        <p>Email <a href="mailto:xenvra.official@gmail.com" className="text-accent hover:underline">xenvra.official@gmail.com</a> with your registered email and UPI UTR / Transaction Reference ID. Refunds are processed within 5-7 business days.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">Invoices & Taxes</h2>
         <p>All prices are in INR and include applicable GST. Digital payment receipts are generated automatically upon purchase and viewable under your Billing dashboard.</p>

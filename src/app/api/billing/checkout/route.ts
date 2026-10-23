@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { RazorpayProvider } from "@/lib/payments/razorpay";
+import { YoupiGatewayProvider } from "@/lib/payments/youpi";
 import { z } from "zod";
 
 const checkoutSchema = z.object({
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const { plan } = parseResult.data;
 
-    // Fetch plan price and duration server-side (never trust client price)
+    // Fetch plan price and duration server-side
     const { data: planRecord, error: planError } = await supabase
       .from("plans")
       .select("id, name, price_inr, duration_days")
@@ -43,21 +43,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Plan configuration not found" }, { status: 404 });
     }
 
-    const razorpay = new RazorpayProvider();
-    const order = await razorpay.createOrder({
-      userId: user.id,
+    const orderId = `YOUPI_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const youpi = new YoupiGatewayProvider();
+    const session = await youpi.createPaymentSession({
+      orderId,
+      amount: planRecord.price_inr,
       plan,
-      amountInr: planRecord.price_inr,
+      userId: user.id,
+      customerEmail: user.email,
     });
 
     // Record pending payment in database
     const { error: paymentInsertError } = await supabase.from("payments").insert({
       user_id: user.id,
-      razorpay_order_id: order.orderId,
+      razorpay_order_id: session.orderId,
       plan,
       amount_inr: planRecord.price_inr,
       status: "pending",
       metadata: {
+        provider: "youpi",
+        vpa: session.vpa,
+        upiUri: session.upiUri,
         userEmail: user.email,
         planName: planRecord.name,
       },
@@ -68,8 +74,13 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      orderId: order.orderId,
-      clientConfig: order.clientConfig,
+      orderId: session.orderId,
+      upiUri: session.upiUri,
+      qrCodeUrl: session.qrCodeUrl,
+      vpa: session.vpa,
+      merchantName: session.merchantName,
+      amount: session.amount,
+      expiresAt: session.expiresAt,
       plan: planRecord,
     });
   } catch (err: unknown) {

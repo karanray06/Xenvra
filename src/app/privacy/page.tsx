@@ -30,7 +30,7 @@ export default function PrivacyPage() {
         <p>When you use AI features, your resume content is sent to our LLM provider for processing. We do not store AI conversation logs containing your resume content beyond the current session.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">5. Third-Party Services</h2>
-        <p>We use: Supabase (auth &amp; database), Vercel (hosting), Razorpay (payments), and an LLM provider (AI features). Each has its own privacy policy.</p>
+        <p>We use: Supabase (auth &amp; database), Vercel (hosting), YouPI Gateway (direct UPI payments), and Groq / LLM providers (AI features). Each has its own privacy policy.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">6. Account Deletion</h2>
         <p>You can delete your account at any time from Settings. This permanently deletes all your resumes, profile data, and payment history. This action is irreversible.</p>

@@ -426,7 +426,7 @@ function FAQ() {
     },
     {
       q: "What payment methods do you accept?",
-      a: "We accept UPI, cards, and netbanking via Razorpay. All prices are in INR. Plans are 30-day passes with no auto-renewal — you buy exactly when you need it.",
+      a: "We accept all UPI apps (Google Pay, PhonePe, Paytm, CRED, BHIM) via YouPI Gateway with 0% gateway fees. All prices are in INR. Plans are 30-day passes with no auto-renewal.",
     },
     {
       q: "Can I cancel anytime?",

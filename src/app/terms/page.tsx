@@ -30,7 +30,7 @@ export default function TermsPage() {
         <p>You own all resume content you create. We do not claim ownership of your data. We store your data securely and do not sell or share it with third parties for advertising purposes.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">5. Payments</h2>
-        <p>Paid plans are 30-day passes purchased via Razorpay. Prices are in INR. Plans do not auto-renew. See our Refund Policy for details on refunds.</p>
+        <p>Paid plans are 30-day passes purchased via direct UPI (YouPI Gateway). Prices are in INR. Plans do not auto-renew. See our Refund Policy for details on refunds.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">6. AI Disclaimer</h2>
         <p>AI-generated suggestions are meant as writing assistance only. You are responsible for verifying the accuracy of all content in your resume. The AI does not invent qualifications, certifications, or employment history.</p>

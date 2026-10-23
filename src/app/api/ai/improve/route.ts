@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkAndRecordAiUsage } from "@/lib/plan-limits";
+import { generateAiCompletion } from "@/lib/ai";
 import { z } from "zod";
 
 const improveRequestSchema = z.object({
@@ -133,11 +134,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Optional LLM Provider (OpenAI) if API key is provided
-    const openAiKey = process.env.OPENAI_API_KEY;
-    if (openAiKey) {
-      try {
-        const systemPrompt = `You are an executive resume editor at an elite career advisory firm.
+    // AI Completion (Groq / OpenAI) with heuristic fallback
+    const systemPrompt = `You are an executive resume editor at an elite career advisory firm.
 Your task is to refine resume text according to the requested action:
 - strengthen: Start with a powerful action verb, highlight measurable impact, eliminate passive voice.
 - shorten: Remove filler words, make punchy and concise while preserving all metrics.
@@ -145,40 +143,18 @@ Your task is to refine resume text according to the requested action:
 - generate_summary: Produce a polished 2-3 sentence executive professional summary.
 Return ONLY the refined text without commentary, quotes, or markdown.`;
 
-        const userPrompt = `Action: ${action}
-Context: ${JSON.stringify(context || {})}
-Original Text: "${text}"`;
+    const userPrompt = `Action: ${action}\nContext: ${JSON.stringify(context || {})}\nOriginal Text: "${text}"`;
 
-        const openAiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${openAiKey}`,
-          },
-          body: JSON.stringify({
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: userPrompt },
-            ],
-            temperature: 0.3,
-            max_tokens: 300,
-          }),
-        });
+    const suggested = await generateAiCompletion([
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ], { maxTokens: 350 });
 
-        if (openAiRes.ok) {
-          const aiJson = await openAiRes.json();
-          const suggested = aiJson.choices?.[0]?.message?.content?.trim();
-          if (suggested) {
-            return NextResponse.json({
-              improvedText: suggested,
-              remaining: quota.remaining,
-            });
-          }
-        }
-      } catch {
-        // Fall back gracefully to high-performance heuristic enhancer
-      }
+    if (suggested) {
+      return NextResponse.json({
+        improvedText: suggested,
+        remaining: quota.remaining,
+      });
     }
 
     // Heuristic enhancement fallback

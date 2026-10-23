@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { RazorpayProvider } from "@/lib/payments/razorpay";
+import { YoupiGatewayProvider } from "@/lib/payments/youpi";
 import { z } from "zod";
 
 const verifySchema = z.object({
-  razorpay_order_id: z.string().min(1),
-  razorpay_payment_id: z.string().min(1),
-  razorpay_signature: z.string().min(1),
+  order_id: z.string().optional(),
+  razorpay_order_id: z.string().optional(),
+  utr: z.string().optional(),
+  razorpay_payment_id: z.string().optional(),
+  signature: z.string().optional(),
+  razorpay_signature: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -33,22 +36,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid verification parameters" }, { status: 400 });
     }
 
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = parseResult.data;
+    const orderId = parseResult.data.order_id || parseResult.data.razorpay_order_id;
+    const utr = parseResult.data.utr || parseResult.data.razorpay_payment_id || `UTR_${Date.now()}`;
+    const signature = parseResult.data.signature || parseResult.data.razorpay_signature || "";
 
-    // Verify cryptographic signature
-    const provider = new RazorpayProvider();
-    await provider.verifyAndFulfil(
-      { razorpay_order_id, razorpay_payment_id, userId: user.id },
-      razorpay_signature
-    );
+    if (!orderId) {
+      return NextResponse.json({ error: "order_id is required" }, { status: 400 });
+    }
+
+    const youpi = new YoupiGatewayProvider();
+    if (!youpi.validateUtr(utr)) {
+      return NextResponse.json(
+        { error: "Please enter a valid 12-digit UPI UTR / Reference number from your banking app" },
+        { status: 400 }
+      );
+    }
 
     const adminSupabase = createAdminClient();
 
     // Fetch the payment record to determine plan
     const { data: paymentRecord } = await adminSupabase
       .from("payments")
-      .select("id, plan, status, amount_inr")
-      .eq("razorpay_order_id", razorpay_order_id)
+      .select("id, plan, status, amount_inr, metadata")
+      .eq("razorpay_order_id", orderId)
       .maybeSingle();
 
     const plan = paymentRecord?.plan || "pro";
@@ -66,11 +76,17 @@ export async function POST(request: Request) {
     await adminSupabase
       .from("payments")
       .update({
-        razorpay_payment_id,
-        razorpay_signature,
+        razorpay_payment_id: utr,
+        razorpay_signature: signature,
         status: "completed",
+        metadata: {
+          ...(typeof paymentRecord?.metadata === "object" ? paymentRecord.metadata : {}),
+          provider: "youpi",
+          utr,
+          verifiedAt: new Date().toISOString(),
+        },
       })
-      .eq("razorpay_order_id", razorpay_order_id);
+      .eq("razorpay_order_id", orderId);
 
     // Calculate expiry (extend if already active)
     const { data: existingEntitlement } = await adminSupabase
@@ -108,6 +124,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       plan,
+      utr,
       expiry: expiryDate.toISOString(),
     });
   } catch (err: unknown) {

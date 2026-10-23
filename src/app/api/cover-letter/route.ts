@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { generateAiCompletion } from "@/lib/ai";
 import type { ResumeData, Contact } from "@/lib/schemas/resume";
 import { z } from "zod";
 
@@ -82,7 +83,28 @@ export async function POST(req: NextRequest) {
       ? `Having closely reviewed your team's requirements, I am particularly equipped to hit the ground running and solve the challenges central to the ${role} mission.`
       : `What excites me most about ${company} is your commitment to excellence and high-standard execution. The requirements outlined for the ${role} align directly with my hands-on experience.`;
 
-    const generatedContent = `${candidateName}
+    // Check if AI completion (Groq / OpenAI) is available for bespoke cover letter
+    let generatedContent = "";
+    const aiPrompt = `Write a compelling, professional cover letter for a candidate applying to ${company} for the ${role} role.
+Tone: ${tone}
+Candidate Name: ${candidateName}
+Contact Info: ${[candidateEmail, candidatePhone, candidateLocation].filter(Boolean).join(" • ")}
+Past Role: ${pastTitle} at ${pastCompany}
+Key Skills: ${topSkills}
+Job Description / Context: ${jobDescription || "Standard industry responsibilities"}
+Greeting: ${greeting}
+
+Format as a complete, ready-to-send business letter with date (${today}), recipient, greeting, 3-4 impactful body paragraphs, and formal sign-off from ${candidateName}. Do not add extra markdown code blocks or quotes.`;
+
+    const aiLetter = await generateAiCompletion([
+      { role: "system", content: "You are an elite executive career advisor and master cover letter writer." },
+      { role: "user", content: aiPrompt }
+    ], { maxTokens: 900 });
+
+    if (aiLetter && aiLetter.length > 200) {
+      generatedContent = aiLetter;
+    } else {
+      generatedContent = `${candidateName}
 ${[candidateEmail, candidatePhone, candidateLocation].filter(Boolean).join("  •  ")}
 
 ${today}
@@ -103,6 +125,7 @@ Thank you for your time and consideration. I welcome the opportunity to discuss 
 Sincerely,
 
 ${candidateName}`;
+    }
 
     let savedId: string | null = null;
     if (save) {
