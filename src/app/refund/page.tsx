@@ -9,8 +9,8 @@ export default function RefundPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <Link href="/" className="mb-8 inline-flex items-center gap-2">
-        <Image src="/logos/xenvra-icon.png" alt="Xenvra" width={28} height={28} className="rounded-md" />
-        <Image src="/logos/xenvra-wordmark.png" alt="Xenvra" width={70} height={18} className="object-contain" />
+        <Image src="/logos/xenvra-icon.svg" alt="Xenvra" width={28} height={28} className="rounded-md" />
+        <Image src="/logos/xenvra-wordmark.svg" alt="Xenvra" width={74} height={18} className="object-contain" />
       </Link>
 
       <h1 className="mb-6 text-3xl font-bold text-text-primary">Refund Policy</h1>

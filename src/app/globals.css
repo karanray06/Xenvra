@@ -1,47 +1,64 @@
 @import "tailwindcss";
 
-/* ===== Xenvra Design Tokens (Tailwind v4 @theme) ===== */
+/* ===== Xenvra Brand Tokens (Tailwind v4 @theme) ===== */
 @theme inline {
-  /* Brand Colors */
-  --color-brand-50: #FFF7ED;
-  --color-brand-100: #FFEDD5;
-  --color-brand-200: #FED7AA;
-  --color-brand-300: #FDBA74;
-  --color-brand-400: #FB923C;
-  --color-brand-500: #F97316;
-  --color-brand-600: #EA580C;
-  --color-brand-700: #C2410C;
-  --color-brand-800: #9A3412;
-  --color-brand-900: #7C2D12;
-  --color-brand-950: #431407;
+  /* Mocha scale (brand-600 = Mocha Brown) */
+  --color-brand-50:  #F6F1EE;
+  --color-brand-100: #EBE0DA;
+  --color-brand-200: #D8C4B9;
+  --color-brand-300: #BFA08F;
+  --color-brand-400: #9C7762;
+  --color-brand-500: #7A5744;
+  --color-brand-600: #5A4032;
+  --color-brand-700: #47322A;
+  --color-brand-800: #352520;
+  --color-brand-900: #241915;
+  --color-brand-950: #150E0C;
+
+  /* Lavender scale (lav-200 = Pale Lavender) */
+  --color-lav-50:  #F8F6FD;
+  --color-lav-100: #EEEAF9;
+  --color-lav-200: #DCD3F2;
+  --color-lav-300: #C9BCEA;
+  --color-lav-400: #B9A9E3;
+  --color-lav-600: #7B66B8;
+
+  /* Ice + Platinum */
+  --color-ice-50:  #F5F9FB;
+  --color-ice-100: #E6EEF4;
+  --color-ice-200: #D5E1EA;
+  --color-platinum-100: #E3E5E8;
+  --color-platinum-200: #C9CCD1;
+  --color-platinum-400: #8A8F98;
 
   /* Semantic aliases */
-  --color-accent: var(--color-brand-500);
-  --color-accent-hover: var(--color-brand-600);
-  --color-primary: var(--color-brand-900);
+  --color-accent: var(--color-brand-600);
+  --color-accent-hover: var(--color-brand-700);
+  --color-accent-soft: var(--color-lav-200);
+  --color-primary: var(--color-brand-800);
   --color-primary-hover: var(--color-brand-950);
 
   /* Neutrals */
   --color-surface: #FFFFFF;
-  --color-surface-secondary: #F8FAFC;
-  --color-surface-tertiary: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-border-strong: #CBD5E1;
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #475569;
-  --color-text-tertiary: #94A3B8;
-  --color-text-inverse: #FFFFFF;
+  --color-surface-secondary: var(--color-ice-50);
+  --color-surface-tertiary: var(--color-ice-100);
+  --color-border: var(--color-platinum-100);
+  --color-border-strong: var(--color-platinum-200);
+  --color-text-primary: #241915;
+  --color-text-secondary: #5E534D;
+  --color-text-tertiary: #6F747C;
+  --color-text-inverse: #F5F9FB;
 
   /* Feedback */
-  --color-success: #16A34A;
-  --color-success-light: #F0FDF4;
-  --color-warning: #D97706;
-  --color-warning-light: #FFFBEB;
-  --color-danger: #DC2626;
-  --color-danger-light: #FEF2F2;
+  --color-success: #2F7D5B;
+  --color-success-light: #EAF5F0;
+  --color-warning: #A8741A;
+  --color-warning-light: #FBF3E3;
+  --color-danger: #B3372F;
+  --color-danger-light: #FBEDEC;
 
   /* Typography */
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   /* Spacing */

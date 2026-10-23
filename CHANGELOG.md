@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Auth redirect safety**: `src/lib/auth-redirect.ts` with strict single-slash path validation; URI encoding on login redirect params.
+- **Brand Identity & Tokens**: Replaced orange theme with metallic palette in `globals.css` (Ice Silver `#E6EEF4`, Mocha Brown `#5A4032`, Platinum Silver `#C9CCD1`, Pale Lavender `#DCD3F2`).
+- **Typography**: Integrated `Plus_Jakarta_Sans` via `next/font/google` (`--font-jakarta`).
+- **Brand Assets & SVGs**: Updated high-res vector logos (`/logos/xenvra-icon.svg`, `/logos/xenvra-wordmark.svg`, `/logos/xenvra-full.svg`), added `src/app/icon.svg`, `src/app/apple-icon.png`, `public/icon-192.png`, `public/icon-512.png`, and `src/app/manifest.ts`.
+- **Dynamic OG Image**: Built `/api/og` route producing 1200x630 social preview images with `next/og`.
+- **Brand Showcase**: Added `/brand` page with downloadable assets, color tokens, and typography guidelines.
 - **Database hardening migration (002)**: `supabase/migrations/002_launch_fixes.sql` with user creation trigger (`handle_new_user`), backfill, RLS `WITH CHECK (auth.uid() = user_id)`, resume plan limits trigger (`check_resume_limit`), versioning, and payload size checks.
 - **Reliable autosave engine**: `src/components/builder/resume-provider.tsx` with serialized write queue, `saved | saving | offline | error` states, exponential retry backoff, keepalive beacon/fetch flush on navigation, and insertion promise locks.
 - **Real PDF export**: A4 print media styling, server-side `/print/[id]` route, diagonal watermark on free tier with automatic paid tier suppression.

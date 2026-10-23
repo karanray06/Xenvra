@@ -21,18 +21,20 @@ function Navbar() {
       <div className="mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
-            src="/logos/xenvra-icon.png"
+            src="/logos/xenvra-icon.svg"
             alt="Xenvra"
             width={36}
             height={36}
-            className="rounded-lg"
+            className="rounded-lg shadow-xs"
+            priority
           />
           <Image
-            src="/logos/xenvra-wordmark.png"
+            src="/logos/xenvra-wordmark.svg"
             alt="Xenvra"
-            width={90}
+            width={92}
             height={22}
             className="hidden object-contain sm:block"
+            priority
           />
         </Link>
         <nav className="hidden items-center gap-8 md:flex">
@@ -493,16 +495,16 @@ function Footer() {
         <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
           <div className="flex items-center gap-2.5">
             <Image
-              src="/logos/xenvra-icon.png"
+              src="/logos/xenvra-icon.svg"
               alt="Xenvra"
               width={28}
               height={28}
               className="rounded-md"
             />
             <Image
-              src="/logos/xenvra-wordmark.png"
+              src="/logos/xenvra-wordmark.svg"
               alt="Xenvra"
-              width={70}
+              width={72}
               height={18}
               className="object-contain"
             />

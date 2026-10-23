@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { getAppBaseUrl } from "@/lib/env";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -28,8 +31,22 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Xenvra — AI-Powered Resume Builder",
     description:
-      "Build professional, ATS-friendly resumes with AI assistance.",
+      "Build professional, ATS-friendly resumes with AI assistance. Resumes, refined.",
     type: "website",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "Xenvra — Resumes, refined.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Xenvra — AI-Powered Resume Builder",
+    description: "Resumes, refined. Build ATS-friendly resumes in minutes.",
+    images: ["/api/og"],
   },
 };
 
@@ -37,9 +54,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plusJakarta.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-surface text-text-primary selection:bg-lav-200 selection:text-text-primary">
+        {children}
+      </body>
     </html>
   );
 }

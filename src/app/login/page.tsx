@@ -71,18 +71,20 @@ function LoginForm() {
       {/* Logo */}
       <Link href="/" className="mb-12 inline-flex items-center gap-3">
         <Image
-          src="/logos/xenvra-icon.png"
+          src="/logos/xenvra-icon.svg"
           alt="Xenvra"
           width={40}
           height={40}
-          className="rounded-lg"
+          className="rounded-lg shadow-sm"
+          priority
         />
         <Image
-          src="/logos/xenvra-wordmark.png"
+          src="/logos/xenvra-wordmark.svg"
           alt="Xenvra"
           width={100}
           height={24}
           className="object-contain"
+          priority
         />
       </Link>
 

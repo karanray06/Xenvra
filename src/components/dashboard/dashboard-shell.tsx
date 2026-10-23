@@ -66,18 +66,20 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <Image
-              src="/logos/xenvra-icon.png"
+              src="/logos/xenvra-icon.svg"
               alt="Xenvra"
               width={32}
               height={32}
               className="rounded-md"
+              priority
             />
             <Image
-              src="/logos/xenvra-wordmark.png"
+              src="/logos/xenvra-wordmark.svg"
               alt="Xenvra"
-              width={80}
+              width={84}
               height={20}
               className="hidden object-contain sm:block"
+              priority
             />
           </Link>
 
