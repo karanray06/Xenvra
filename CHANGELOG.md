@@ -8,6 +8,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Penpot-Style Vector Design Studio (`src/components/design/`)**:
+  - Full A4 vector artboard (794 x 1123 px at 96 DPI) with live zooming (40% - 200%) and grid snapping.
+  - Native vector drawing tools: Text, Rectangles (with corner radius), Circles, Divider Lines, and Skill Badges.
+  - Interactive canvas manipulation: drag to move, 8-point resize bounding box handles, top rotation stalk, and inline double-click text editing.
+  - Penpot-style layer hierarchy sidebar (`LayerPanel`) supporting reordering (up/down/front/back), visibility toggle (hide/show), lock toggle, duplicate, and deletion.
+  - Properties inspector (`PropertiesPanel`) with 6-way alignment, geometry inputs (X, Y, W, H, rotation, opacity), metallic brand color palettes, custom hex pickers, and typography controls.
+  - "Convert Resume → Design" engine (`convert-resume.ts`) translating structured resume data into an artboard layout.
+  - Vector export suite: SVG export (native XML serialization), High-Res 2x PNG export, and Print PDF.
+  - Seamless toggle in builder toolbar between Template Mode and Vector Studio.
+  - Autosave persistence directly to `resumes.design_json`.
+- **Job Description (JD) Tailoring & Keyword Matcher (`/dashboard/tailor`, `/api/tailor`)**:
+  - Deep keyword extraction engine analyzing job descriptions and computing ATS score improvements.
+  - Automated tailored summary and experience bullets highlighting role-specific competencies.
+  - 1-click "Save as New Tailored Resume" action directly opening in Builder.
+- **AI Cover Letter Generator (`/dashboard/cover-letters`, `/api/cover-letter`)**:
+  - Full cover letter management suite with database persistence (`cover_letters` table).
+  - Generates bespoke, executive cover letters personalized with candidate's actual accomplishments and skills.
+  - In-place text editing, clipboard copy, and formatted PDF print export.
+- **Resume Version History (`/api/resumes/[id]/versions`, `VersionHistoryDrawer`)**:
+  - Automated snapshotting on save with optimistic versioning.
+  - Builder slide-out drawer displaying version timeline, word count, and summary.
+  - 1-click restore action returning resume state to any historical snapshot.
+- **Job Application Tracker (`/dashboard/applications`, `/api/applications`)**:
+  - Full Kanban pipeline tracker across 5 stages: Saved, Applied, Interviewing, Offer Received, and Archived.
+  - Quick status advance menus, metrics cards (active pipeline, interviews, offers), and modal to track new opportunities.
+- **Public Portfolio Profile with Live Analytics (`/p/[slug]`, `/api/profile/public`)**:
+  - Responsive web resume portfolio showing candidate highlights, experience timeline, skills, and direct PDF download.
+  - Custom slug support (`/p/[yourname]`) with public/private visibility toggle.
+  - Real-time anonymous view tracking with dashboard view counters in Settings.
 - **ATS Scoring & Job Keyword Scanner (`/api/ats`)**:
   - Implemented deterministic, explainable ATS parser evaluation algorithm (`src/lib/ats.ts`) evaluating contact completeness, section structure, impact quantification, action verbs, and skills.
   - Added Job Description comparison engine analyzing keyword frequency and identifying missing high-relevance qualifications.

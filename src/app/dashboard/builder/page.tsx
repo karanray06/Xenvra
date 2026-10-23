@@ -55,6 +55,7 @@ export default async function BuilderPage(props: {
       initialTitle={resume?.title || "Untitled Resume"}
       initialTemplateId={initialTemplateId}
       initialData={resume?.data || null}
+      initialDesignJson={resume?.design_json || null}
       isPaid={isPaid}
     />
   );

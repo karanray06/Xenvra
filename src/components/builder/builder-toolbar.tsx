@@ -15,13 +15,21 @@ import {
   Target,
   Sparkles,
   FileText,
+  History,
+  Palette,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AtsDrawer } from "./ats-drawer";
 import { AiAssistModal } from "./ai-assist-modal";
+import { VersionHistoryDrawer } from "./version-history-drawer";
 
-export function BuilderToolbar() {
+interface BuilderToolbarProps {
+  mode?: "template" | "design";
+  onModeChange?: (mode: "template" | "design") => void;
+}
+
+export function BuilderToolbar({ onModeChange }: BuilderToolbarProps = {}) {
   const router = useRouter();
   const {
     id,
@@ -44,6 +52,7 @@ export function BuilderToolbar() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [isAtsOpen, setIsAtsOpen] = useState(false);
   const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isExportingDocx, setIsExportingDocx] = useState(false);
 
   const handlePrint = () => {
@@ -198,6 +207,28 @@ export function BuilderToolbar() {
             <span>AI Assist</span>
           </button>
 
+          {/* Version History Button */}
+          <button
+            onClick={() => setIsHistoryOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text-primary transition-colors hover:border-accent hover:text-accent shadow-xs"
+            title="View past snapshots and restore"
+          >
+            <History className="h-3.5 w-3.5 text-accent" />
+            <span>History</span>
+          </button>
+
+          {/* Vector Design Studio (Penpot) Button */}
+          {onModeChange && (
+            <button
+              onClick={() => onModeChange("design")}
+              className="flex items-center gap-1.5 rounded-md border border-accent bg-brand-50 px-2.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-brand-100 shadow-xs"
+              title="Switch to Vector Design Studio (Penpot)"
+            >
+              <Palette className="h-3.5 w-3.5" />
+              <span>Vector Studio</span>
+            </button>
+          )}
+
           {/* Template Selector */}
           <div className="relative">
             <button
@@ -278,6 +309,12 @@ export function BuilderToolbar() {
         onApply={(improved) => {
           updateField("summary", improved);
         }}
+      />
+
+      {/* Version History Drawer */}
+      <VersionHistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
       />
     </>
   );

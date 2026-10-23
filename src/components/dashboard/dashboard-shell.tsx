@@ -15,6 +15,9 @@ import {
   CreditCard,
   Sparkles,
   X,
+  Briefcase,
+  Mail,
+  Target,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -33,6 +36,9 @@ interface DashboardShellProps {
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/builder", label: "Builder", icon: FileText },
+  { href: "/dashboard/applications", label: "Tracker", icon: Briefcase },
+  { href: "/dashboard/cover-letters", label: "Cover Letters", icon: Mail },
+  { href: "/dashboard/tailor", label: "JD Tailor", icon: Target },
   { href: "/dashboard/templates", label: "Templates", icon: Grid },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },

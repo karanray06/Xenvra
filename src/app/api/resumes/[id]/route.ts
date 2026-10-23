@@ -8,6 +8,7 @@ const updateResumeSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   template_id: z.string().max(50).optional(),
   data: resumeDataSchema.optional(),
+  design_json: z.unknown().optional(),
   version: z.number().int().optional(),
 });
 
@@ -54,7 +55,7 @@ async function handleSave(
     );
   }
 
-  const { title, template_id, data, version } = parseResult.data;
+  const { title, template_id, data, design_json, version } = parseResult.data;
 
   // Server-side plan check: non-free templates require active paid entitlement
   if (template_id) {
@@ -109,6 +110,7 @@ async function handleSave(
   if (title !== undefined) updates.title = title;
   if (template_id !== undefined) updates.template_id = template_id;
   if (data !== undefined) updates.data = data;
+  if (design_json !== undefined) updates.design_json = design_json;
 
   const { error: updateErr } = await supabase
     .from("resumes")
@@ -118,6 +120,16 @@ async function handleSave(
 
   if (updateErr) {
     return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  }
+
+  // Snapshot into version history
+  if (data !== undefined) {
+    await supabase.from("resume_versions").insert({
+      resume_id: id,
+      user_id: user.id,
+      data,
+      version_number: newVersion,
+    });
   }
 
   return NextResponse.json({ ok: true, version: newVersion });

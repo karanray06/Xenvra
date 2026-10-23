@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { User, CreditCard } from "lucide-react";
 import { DeleteAccountButton } from "@/components/settings/delete-account-button";
+import { PublicProfileCard } from "@/components/settings/public-profile-card";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -23,6 +24,27 @@ export default async function SettingsPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { data: publicProfile } = await supabase
+    .from("public_profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  let viewsCount = 0;
+  if (publicProfile) {
+    const { count } = await supabase
+      .from("profile_views")
+      .select("id", { count: "exact", head: true })
+      .eq("public_profile_id", publicProfile.id);
+    viewsCount = count || 0;
+  }
+
+  const { data: userResumes } = await supabase
+    .from("resumes")
+    .select("id, title")
+    .eq("user_id", user.id)
+    .order("updated_at", { ascending: false });
+
   const planName =
     entitlement?.status === "active"
       ? entitlement.plan === "pro"
@@ -37,6 +59,13 @@ export default async function SettingsPage() {
       <h1 className="mb-8 text-2xl font-bold text-text-primary">Settings</h1>
 
       <div className="space-y-6">
+        {/* Public Profile & Analytics Section */}
+        <PublicProfileCard
+          initialProfile={publicProfile}
+          viewsCount={viewsCount}
+          resumes={userResumes || []}
+        />
+
         {/* Profile Section */}
         <section className="rounded-xl border border-border bg-surface p-6">
           <div className="mb-6 flex items-center gap-3">
