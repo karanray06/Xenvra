@@ -18,6 +18,7 @@ import {
   Briefcase,
   Mail,
   Target,
+  Palette,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
@@ -36,6 +37,7 @@ interface DashboardShellProps {
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/builder", label: "Builder", icon: FileText },
+  { href: "/dashboard/studio", label: "Vector Studio", icon: Palette },
   { href: "/dashboard/applications", label: "Tracker", icon: Briefcase },
   { href: "/dashboard/cover-letters", label: "Cover Letters", icon: Mail },
   { href: "/dashboard/tailor", label: "JD Tailor", icon: Target },

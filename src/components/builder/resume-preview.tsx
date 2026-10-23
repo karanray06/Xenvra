@@ -6,9 +6,11 @@ import { useRef } from "react";
 
 interface ResumePreviewProps {
   isPaid?: boolean;
+  accentColor?: string;
+  fontFamily?: string;
 }
 
-export function ResumePreview({ isPaid = false }: ResumePreviewProps) {
+export function ResumePreview({ isPaid = false, accentColor, fontFamily }: ResumePreviewProps) {
   const { data, templateId } = useResume();
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -24,7 +26,12 @@ export function ResumePreview({ isPaid = false }: ResumePreviewProps) {
           transformOrigin: "top center",
         }}
       >
-        <TemplateRenderer templateId={templateId} data={data} />
+        <TemplateRenderer
+          templateId={templateId}
+          data={data}
+          accentColor={accentColor}
+          fontFamily={fontFamily}
+        />
 
         {/* Free Plan Diagonal Watermark (paid = none) */}
         {!isPaid && (

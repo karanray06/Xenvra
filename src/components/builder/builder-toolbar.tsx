@@ -24,12 +24,15 @@ import { AtsDrawer } from "./ats-drawer";
 import { AiAssistModal } from "./ai-assist-modal";
 import { VersionHistoryDrawer } from "./version-history-drawer";
 
+import { Wand2 } from "lucide-react";
+
 interface BuilderToolbarProps {
   mode?: "template" | "design";
   onModeChange?: (mode: "template" | "design") => void;
+  onOpenCanvaTools?: () => void;
 }
 
-export function BuilderToolbar({ onModeChange }: BuilderToolbarProps = {}) {
+export function BuilderToolbar({ onModeChange, onOpenCanvaTools }: BuilderToolbarProps = {}) {
   const router = useRouter();
   const {
     id,
@@ -226,6 +229,18 @@ export function BuilderToolbar({ onModeChange }: BuilderToolbarProps = {}) {
             >
               <Palette className="h-3.5 w-3.5" />
               <span>Vector Studio</span>
+            </button>
+          )}
+
+          {/* Canva-Grade Design Tools & Brand Kit */}
+          {onOpenCanvaTools && (
+            <button
+              onClick={onOpenCanvaTools}
+              className="flex items-center gap-1.5 rounded-md border border-accent/40 bg-brand-50/70 px-2.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-brand-100 shadow-xs"
+              title="Open Canva-grade Design Tools (Brand Kit, Font Library, Image Palette, Share & Embed)"
+            >
+              <Wand2 className="h-3.5 w-3.5 text-accent" />
+              <span>Design Tools</span>
             </button>
           )}
 

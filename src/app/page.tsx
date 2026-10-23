@@ -13,6 +13,8 @@ import {
   Target,
   Zap,
 } from "lucide-react";
+import { StartInspiredSection } from "@/components/home/start-inspired-section";
+import { CanvaFeaturesSection } from "@/components/home/canva-features-section";
 
 // ===== Navbar =====
 function Navbar() {
@@ -547,7 +549,8 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <Hero />
-        <Features />
+        <StartInspiredSection />
+        <CanvaFeaturesSection />
         <HowItWorks />
         <PricingPreview />
         <FAQ />

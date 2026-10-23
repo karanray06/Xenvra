@@ -12,6 +12,7 @@ export const contactSchema = z.object({
   website: z.string().default(""),
   linkedin: z.string().default(""),
   github: z.string().default(""),
+  photoUrl: z.string().optional(),
 });
 
 export const experienceSchema = z.object({
