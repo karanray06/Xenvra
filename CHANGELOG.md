@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Real-Time Multi-Device Sync**: Subscribed builder to `postgres_changes` on `resumes` for instant live updates across tabs and devices.
+- **Conflict Resolution**: Added non-blocking conflict bar allowing users to either reload remote updates or force keep local edits.
+- **Presence Tracking**: Live Supabase presence channel (`resume:<id>`) showing a Pale Lavender indicator chip when open on another device.
+- **Instant Plan Unlocking**: Shell real-time subscription on `entitlements` displaying a toast and unlocking paid templates/exports immediately upon payment webhook reception.
 - **Brand Identity & Tokens**: Replaced orange theme with metallic palette in `globals.css` (Ice Silver `#E6EEF4`, Mocha Brown `#5A4032`, Platinum Silver `#C9CCD1`, Pale Lavender `#DCD3F2`).
 - **Typography**: Integrated `Plus_Jakarta_Sans` via `next/font/google` (`--font-jakarta`).
 - **Brand Assets & SVGs**: Updated high-res vector logos (`/logos/xenvra-icon.svg`, `/logos/xenvra-wordmark.svg`, `/logos/xenvra-full.svg`), added `src/app/icon.svg`, `src/app/apple-icon.png`, `public/icon-192.png`, `public/icon-512.png`, and `src/app/manifest.ts`.

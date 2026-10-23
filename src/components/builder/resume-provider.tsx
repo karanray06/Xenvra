@@ -14,6 +14,13 @@ import { createClient } from "@/lib/supabase/client";
 
 export type SaveStatus = "saved" | "saving" | "offline" | "error";
 
+interface RemoteSnapshot {
+  title: string;
+  templateId: string;
+  data: ResumeData;
+  version: number;
+}
+
 interface ResumeState {
   id: string | null;
   title: string;
@@ -23,6 +30,8 @@ interface ResumeState {
   saveStatus: SaveStatus;
   lastSaved: Date | null;
   errorMessage: string | null;
+  alsoOpenInOtherDevice: boolean;
+  conflictRemote: RemoteSnapshot | null;
 }
 
 interface ResumeContextType extends ResumeState {
@@ -32,6 +41,8 @@ interface ResumeContextType extends ResumeState {
   updateData: (updater: (prev: ResumeData) => ResumeData) => void;
   updateField: <K extends keyof ResumeData>(key: K, value: ResumeData[K]) => void;
   retrySave: () => void;
+  resolveConflictReload: () => void;
+  resolveConflictKeepMine: () => void;
 }
 
 const ResumeContext = createContext<ResumeContextType | null>(null);
@@ -70,6 +81,8 @@ export function ResumeProvider({
     saveStatus: "saved",
     lastSaved: initialId ? new Date() : null,
     errorMessage: null,
+    alsoOpenInOtherDevice: false,
+    conflictRemote: null,
   });
 
   const supabase = createClient();
@@ -81,6 +94,13 @@ export function ResumeProvider({
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const creatingPromiseRef = useRef<Promise<string | null> | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const tabIdRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!tabIdRef.current) {
+      tabIdRef.current = Math.random().toString(36).substring(2, 9);
+    }
+  }, []);
 
   useEffect(() => {
     stateRef.current = state;
@@ -270,6 +290,116 @@ export function ResumeProvider({
     queueSave();
   }, [queueSave]);
 
+  // Resolve conflict: reload remote version
+  const resolveConflictReload = useCallback(() => {
+    if (!state.conflictRemote) return;
+    const r = state.conflictRemote;
+    dirtyRef.current = false;
+    setState((p) => ({
+      ...p,
+      title: r.title,
+      templateId: r.templateId,
+      data: r.data,
+      version: r.version,
+      conflictRemote: null,
+      saveStatus: "saved",
+      lastSaved: new Date(),
+    }));
+  }, [state.conflictRemote]);
+
+  // Resolve conflict: force keep local changes
+  const resolveConflictKeepMine = useCallback(() => {
+    if (!state.conflictRemote) return;
+    const newVersion = state.conflictRemote.version + 1;
+    setState((p) => ({
+      ...p,
+      version: newVersion,
+      conflictRemote: null,
+    }));
+    dirtyRef.current = true;
+    queueSave();
+  }, [state.conflictRemote, queueSave]);
+
+  // Real-time postgres_changes subscription & presence channel
+  useEffect(() => {
+    const resumeId = state.id;
+    if (!resumeId) return;
+
+    // 1. Changes subscription
+    const changesChannel = supabase
+      .channel(`resumes_realtime_${resumeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "resumes",
+          filter: `id=eq.${resumeId}`,
+        },
+        (payload) => {
+          const remote = payload.new as {
+            version?: number;
+            title?: string;
+            template_id?: string;
+            data?: Record<string, unknown>;
+          };
+          const remoteVersion = remote.version ?? 1;
+
+          if (remoteVersion > stateRef.current.version) {
+            const remoteSnapshot: RemoteSnapshot = {
+              title: remote.title || stateRef.current.title,
+              templateId: remote.template_id || stateRef.current.templateId,
+              data: (remote.data as unknown as ResumeData) || stateRef.current.data,
+              version: remoteVersion,
+            };
+
+            if (!dirtyRef.current) {
+              // Not mid-edit: automatically apply remote update
+              setState((p) => ({
+                ...p,
+                title: remoteSnapshot.title,
+                templateId: remoteSnapshot.templateId,
+                data: remoteSnapshot.data,
+                version: remoteVersion,
+                saveStatus: "saved",
+                lastSaved: new Date(),
+              }));
+            } else {
+              // Mid-edit conflict: prompt user non-blockingly
+              setState((p) => ({
+                ...p,
+                conflictRemote: remoteSnapshot,
+              }));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // 2. Presence channel (resume:<id>)
+    const presenceChannel = supabase
+      .channel(`resume:${resumeId}`)
+      .on("presence", { event: "sync" }, () => {
+        const presences = presenceChannel.presenceState();
+        const clientCount = Object.keys(presences).length;
+        setState((p) => ({ ...p, alsoOpenInOtherDevice: clientCount > 1 }));
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({
+            tabId: tabIdRef.current,
+            userId,
+            joinedAt: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(changesChannel);
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [state.id, supabase, userId]);
+
   // Connectivity listeners
   useEffect(() => {
     const handleOnline = () => {
@@ -353,6 +483,8 @@ export function ResumeProvider({
         updateData,
         updateField,
         retrySave,
+        resolveConflictReload,
+        resolveConflictKeepMine,
       }}
     >
       {children}
