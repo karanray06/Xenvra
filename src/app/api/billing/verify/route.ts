@@ -12,6 +12,7 @@ const verifySchema = z.object({
   signature: z.string().optional(),
   razorpay_signature: z.string().optional(),
   auto_confirm: z.boolean().optional(),
+  plan: z.enum(["beginner", "pro"]).optional(),
 });
 
 /**
@@ -109,33 +110,56 @@ export async function POST(request: Request) {
       .eq("razorpay_order_id", orderId)
       .maybeSingle();
 
-    const plan = paymentRecord?.plan || "pro";
+    const requestedPlan = parseResult.data.plan;
+    const plan: "beginner" | "pro" =
+      (paymentRecord?.plan as "beginner" | "pro") ||
+      (requestedPlan as "beginner" | "pro") ||
+      "beginner";
 
     // Fetch plan duration
     const { data: planData } = await adminSupabase
       .from("plans")
-      .select("duration_days")
+      .select("duration_days, price_inr")
       .eq("id", plan)
       .maybeSingle();
 
     const durationDays = planData?.duration_days || 30;
 
-    // Update payment record to completed
-    await adminSupabase
-      .from("payments")
-      .update({
+    // Update or insert payment record as completed
+    if (!paymentRecord) {
+      await adminSupabase.from("payments").insert({
+        user_id: user.id,
+        razorpay_order_id: orderId,
         razorpay_payment_id: utr,
         razorpay_signature: signature,
+        plan,
+        amount_inr: planData?.price_inr || (plan === "pro" ? 49 : 29),
         status: "completed",
         metadata: {
-          ...(typeof paymentRecord?.metadata === "object" ? paymentRecord.metadata : {}),
           provider: "youpi",
           utr,
           verifiedAt: new Date().toISOString(),
           autoConfirmed: autoConfirm,
         },
-      })
-      .eq("razorpay_order_id", orderId);
+      });
+    } else {
+      await adminSupabase
+        .from("payments")
+        .update({
+          razorpay_payment_id: utr,
+          razorpay_signature: signature,
+          plan,
+          status: "completed",
+          metadata: {
+            ...(typeof paymentRecord?.metadata === "object" ? paymentRecord.metadata : {}),
+            provider: "youpi",
+            utr,
+            verifiedAt: new Date().toISOString(),
+            autoConfirmed: autoConfirm,
+          },
+        })
+        .eq("razorpay_order_id", orderId);
+    }
 
     // Calculate expiry (extend if already active)
     const { data: existingEntitlement } = await adminSupabase

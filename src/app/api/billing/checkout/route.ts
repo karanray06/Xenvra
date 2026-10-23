@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { YoupiGatewayProvider } from "@/lib/payments/youpi";
 import { z } from "zod";
 
@@ -53,8 +54,9 @@ export async function POST(request: Request) {
       customerEmail: user.email,
     });
 
-    // Record pending payment in database
-    const { error: paymentInsertError } = await supabase.from("payments").insert({
+    // Record pending payment in database using service role (bypass user RLS)
+    const adminSupabase = createAdminClient();
+    const { error: paymentInsertError } = await adminSupabase.from("payments").insert({
       user_id: user.id,
       razorpay_order_id: session.orderId,
       plan,

@@ -161,8 +161,10 @@ body {
     visibility: hidden;
   }
   #resume-preview,
-  #resume-preview * {
-    visibility: visible;
+  #resume-preview *,
+  #cover-letter-printable,
+  #cover-letter-printable * {
+    visibility: visible !important;
   }
   #resume-preview {
     position: absolute;
@@ -177,5 +179,26 @@ body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+  #cover-letter-printable {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 25mm 22mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-family: Georgia, Cambria, "Times New Roman", Times, serif !important;
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    box-shadow: none !important;
+    border: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
+
 

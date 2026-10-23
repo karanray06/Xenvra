@@ -8,7 +8,7 @@
 
 Build professional, ATS-friendly resumes in minutes — not hours.
 
-[![Live Demo](https://img.shields.io/badge/Live-xenvra.kareixo.me-F97316?style=for-the-badge)](https://xenvra.kareixo.me)
+[![Live Demo](https://img.shields.io/badge/Live-xenvraresume.vercel.app-F97316?style=for-the-badge)](https://xenvraresume.vercel.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000?style=flat-square&logo=next.js)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20DB-3FCF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)

@@ -359,6 +359,15 @@ export function CoverLetterClient({
                   className="w-full font-serif text-xs leading-relaxed text-[#2B2D31] bg-transparent focus:outline-none resize-y"
                 />
               </div>
+
+              {/* Dedicated Printable Document Container (Only visible in print/PDF output) */}
+              <div id="cover-letter-printable" className="hidden print:block" aria-hidden="true">
+                <div className="printable-cover-letter-content">
+                  <div className="whitespace-pre-wrap font-serif text-[11pt] leading-[1.65] text-[#111827]">
+                    {activeContent || selectedLetter?.content || ""}
+                  </div>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="flex h-full min-h-[420px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface p-12 text-center">

@@ -135,6 +135,7 @@ export function BillingClient({
         body: JSON.stringify({
           order_id: youpiModal.orderId,
           utr: utrInput.trim() || `UTR_${Date.now()}`,
+          plan: youpiModal.planId,
         }),
       });
 
@@ -196,6 +197,7 @@ export function BillingClient({
         body: JSON.stringify({
           order_id: youpiModal.orderId,
           auto_confirm: true,
+          plan: youpiModal.planId,
         }),
       });
 
@@ -243,6 +245,7 @@ export function BillingClient({
         body: JSON.stringify({
           order_id: youpiModal.orderId,
           utr: cardRef,
+          plan: youpiModal.planId,
         }),
       });
 
