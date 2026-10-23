@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **ATS Scoring & Job Keyword Scanner (`/api/ats`)**:
+  - Implemented deterministic, explainable ATS parser evaluation algorithm (`src/lib/ats.ts`) evaluating contact completeness, section structure, impact quantification, action verbs, and skills.
+  - Added Job Description comparison engine analyzing keyword frequency and identifying missing high-relevance qualifications.
+  - Built interactive ATS drawer (`src/components/builder/ats-drawer.tsx`) with circular gauge, category progress bars, and actionable tips.
+- **AI Resume Writing Assistant (`/api/ai/improve`)**:
+  - Built server route with plan quota validation (`checkAndRecordAiUsage`) and anti-hallucination prompts.
+  - Implemented 4 enhancement modes: `strengthen` (action verbs + metric prompts), `shorten` (conciseness), `fix_grammar`, and `generate_summary`.
+  - Built `AiAssistModal` component in builder with real-time preview and one-click insertion.
+- **Pro DOCX Export (`/api/resumes/[id]/docx`)**:
+  - Integrated `docx` npm library to generate clean, professionally formatted Microsoft Word resumes.
+  - Built server-side entitlement check restricting DOCX export to paid subscribers.
+  - Added "Export DOCX" action button in `BuilderToolbar`.
 - **Payments & Billing System (Razorpay)**:
   - Installed `razorpay` SDK with typed client integration (`src/lib/payments/razorpay.ts`).
   - Implemented provider-agnostic interface (`src/lib/payments/provider.ts`) with a forward-compatible Hyperswitch stub (`src/lib/payments/hyperswitch.ts`).

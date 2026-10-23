@@ -12,15 +12,25 @@ import {
   RotateCcw,
   Smartphone,
   AlertTriangle,
+  Target,
+  Sparkles,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AtsDrawer } from "./ats-drawer";
+import { AiAssistModal } from "./ai-assist-modal";
 
 export function BuilderToolbar() {
+  const router = useRouter();
   const {
+    id,
     title,
     setTitle,
     templateId,
     setTemplateId,
+    data,
+    updateField,
     saveStatus,
     lastSaved,
     retrySave,
@@ -32,6 +42,9 @@ export function BuilderToolbar() {
   } = useResume();
 
   const [showTemplates, setShowTemplates] = useState(false);
+  const [isAtsOpen, setIsAtsOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isExportingDocx, setIsExportingDocx] = useState(false);
 
   const handlePrint = () => {
     // Sanitize document title for safe PDF file naming when printing
@@ -45,6 +58,44 @@ export function BuilderToolbar() {
     setTimeout(() => {
       document.title = originalTitle;
     }, 1000);
+  };
+
+  const handleDocxExport = async () => {
+    if (!id) {
+      alert("Please wait a moment for the resume to finish initial save before exporting.");
+      return;
+    }
+
+    setIsExportingDocx(true);
+
+    try {
+      const res = await fetch(`/api/resumes/${id}/docx`);
+      if (!res.ok) {
+        const json = await res.json();
+        if (res.status === 403) {
+          if (confirm("DOCX export is available on Beginner and Pro plans. Would you like to view plans on the Billing page?")) {
+            router.push("/dashboard/billing");
+          }
+          return;
+        }
+        throw new Error(json.error || "DOCX generation failed");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(title.trim() || "Resume").replace(/[^a-zA-Z0-9_\-\s]/g, "")}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Export failed";
+      alert(msg);
+    } finally {
+      setIsExportingDocx(false);
+    }
   };
 
   return (
@@ -75,7 +126,7 @@ export function BuilderToolbar() {
         </div>
       )}
 
-      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface px-4 py-2.5">
         <div className="flex items-center gap-3">
           <input
             value={title}
@@ -128,12 +179,30 @@ export function BuilderToolbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ATS Score Button */}
+          <button
+            onClick={() => setIsAtsOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text-primary transition-colors hover:border-accent hover:text-accent shadow-xs"
+          >
+            <Target className="h-3.5 w-3.5 text-accent" />
+            <span>ATS Score</span>
+          </button>
+
+          {/* AI Assist Button */}
+          <button
+            onClick={() => setIsAiOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text-primary transition-colors hover:border-accent hover:text-accent shadow-xs"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-accent" />
+            <span>AI Assist</span>
+          </button>
+
           {/* Template Selector */}
           <div className="relative">
             <button
               onClick={() => setShowTemplates(!showTemplates)}
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tertiary"
+              className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tertiary shadow-xs"
             >
               <Layout className="h-3.5 w-3.5" />
               {TEMPLATES.find((t) => t.id === templateId)?.name || "Template"}
@@ -168,16 +237,48 @@ export function BuilderToolbar() {
             )}
           </div>
 
+          {/* Export DOCX Button */}
+          <button
+            onClick={handleDocxExport}
+            disabled={isExportingDocx}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold text-text-primary transition-colors hover:bg-surface-secondary shadow-xs disabled:opacity-60"
+            title="Download formatted Microsoft Word document (.docx)"
+          >
+            {isExportingDocx ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-accent" />
+            ) : (
+              <FileText className="h-3.5 w-3.5 text-accent" />
+            )}
+            <span>Export DOCX</span>
+          </button>
+
           {/* Export PDF Button */}
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover shadow-sm"
+            className="flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-accent-hover shadow-xs"
           >
             <Download className="h-3.5 w-3.5" />
             Export PDF
           </button>
         </div>
       </div>
+
+      {/* ATS Analysis Drawer */}
+      <AtsDrawer isOpen={isAtsOpen} onClose={() => setIsAtsOpen(false)} />
+
+      {/* AI Writing Assistant Modal */}
+      <AiAssistModal
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+        initialText={data.summary || ""}
+        context={{
+          role: data.contact?.title,
+          skills: data.skills,
+        }}
+        onApply={(improved) => {
+          updateField("summary", improved);
+        }}
+      />
     </>
   );
 }
