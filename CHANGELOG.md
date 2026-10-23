@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Payments & Billing System (Razorpay)**:
+  - Installed `razorpay` SDK with typed client integration (`src/lib/payments/razorpay.ts`).
+  - Implemented provider-agnostic interface (`src/lib/payments/provider.ts`) with a forward-compatible Hyperswitch stub (`src/lib/payments/hyperswitch.ts`).
+  - Created checkout endpoint (`POST /api/billing/checkout`) reading plan configurations dynamically from database with server-side pricing.
+  - Implemented payment verification endpoint (`POST /api/billing/verify`) validating cryptographic signatures before upgrading entitlements.
+  - Built idempotent webhook handler (`POST /api/billing/webhook`) verifying HMAC signatures, recording events, handling payment captures and refunds, and extending subscription end dates.
+  - Built automated daily subscription expiry cron endpoint (`GET /api/cron/expire`) with Bearer token authentication and `vercel.json` schedule.
+  - Created `/dashboard/billing` page and interactive `BillingClient` with Razorpay Checkout modal, dynamic pricing cards, and transaction history.
+  - Added server-side plan limit enforcement and AI usage quotas (`src/lib/plan-limits.ts`).
+  - Updated refund policy with GST and tax-inclusive breakdown notes.
 - **Real-Time Multi-Device Sync**: Subscribed builder to `postgres_changes` on `resumes` for instant live updates across tabs and devices.
 - **Conflict Resolution**: Added non-blocking conflict bar allowing users to either reload remote updates or force keep local edits.
 - **Presence Tracking**: Live Supabase presence channel (`resume:<id>`) showing a Pale Lavender indicator chip when open on another device.
