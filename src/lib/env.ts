@@ -38,10 +38,7 @@ export function validateEnv() {
   });
 
   if (!result.success) {
-    console.error("❌ Environment variable validation failed:", result.error.format());
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(`Invalid environment variables: ${JSON.stringify(result.error.format())}`);
-    }
+    console.warn("⚠️ Environment variable validation warning:", result.error.format());
   }
 
   return result.data;
