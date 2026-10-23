@@ -1,0 +1,6 @@
+Contact: mailto:xenvra.official@gmail.com
+Expires: 2027-10-23T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://xenvraresume.vercel.app/.well-known/security.txt
+Policy: https://xenvraresume.vercel.app/privacy
+Acknowledgments: https://xenvraresume.vercel.app/brand

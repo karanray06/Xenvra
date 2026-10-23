@@ -11,6 +11,32 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { ResumeData } from "@/lib/schemas/resume";
+import type { Metadata } from "next";
+
+export async function generateMetadata(props: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await props.params;
+  const supabase = await createClient();
+  const { data: profile } = await supabase
+    .from("public_profiles")
+    .select("visibility")
+    .eq("slug", slug.toLowerCase())
+    .maybeSingle();
+
+  const isPublic = profile?.visibility === "public";
+  return {
+    title: `${slug} — Verified Profile | Xenvra`,
+    robots: {
+      index: isPublic,
+      follow: isPublic,
+      googleBot: {
+        index: isPublic,
+        follow: isPublic,
+      },
+    },
+  };
+}
 
 export default async function PublicProfilePage(props: {
   params: Promise<{ slug: string }>;
