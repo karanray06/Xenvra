@@ -153,15 +153,12 @@ Works out of the box with Supabase. Users enter their email and receive a sign-i
 
 ## 🌐 Deployment
 
-This project is designed for **Vercel**:
+This project is deployed on **Vercel**:
 
 1. Connect your GitHub repo to [Vercel](https://vercel.com)
 2. Add the environment variables in Vercel → Settings → Environment Variables
 3. Deploy — Vercel auto-builds on every push to `main`
-
-For custom domain setup (e.g. `xenvra.kareixo.me`):
-- Add a CNAME record pointing to `cname.vercel-dns.com`
-- Add the domain in Vercel → Settings → Domains
+4. The application is hosted directly on Vercel (e.g. `*.vercel.app`), with custom domain mapping (`xenvra.kareixo.me`) optional later.
 
 ## 📜 Legal
 
@@ -171,7 +168,7 @@ For custom domain setup (e.g. `xenvra.kareixo.me`):
 
 ## 📬 Contact
 
-For questions or support: **support@kareixo.me**
+For questions or support: **xenvra.official@gmail.com**
 
 ---
 

@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getSafeRedirectPath } from "@/lib/auth-redirect";
+
+export { getSafeRedirectPath };
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = getSafeRedirectPath(searchParams.get("next"));
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      // Create profile if it doesn't exist
+      // Create profile if it doesn't exist (fallback if DB trigger hasn't fired)
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -21,7 +24,7 @@ export async function GET(request: Request) {
           .from("profiles")
           .select("id")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
 
         if (!existingProfile) {
           await supabase.from("profiles").insert({

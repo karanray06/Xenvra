@@ -36,7 +36,7 @@ export default function PrivacyPage() {
         <p>You can delete your account at any time from Settings. This permanently deletes all your resumes, profile data, and payment history. This action is irreversible.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">7. Contact</h2>
-        <p>For privacy questions, email <a href="mailto:support@kareixo.me" className="text-accent hover:underline">support@kareixo.me</a>.</p>
+        <p>For privacy questions, email <a href="mailto:xenvra.official@gmail.com" className="text-accent hover:underline">xenvra.official@gmail.com</a>.</p>
       </div>
     </div>
   );

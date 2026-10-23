@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getAppBaseUrl } from "@/lib/env";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getAppBaseUrl()),
   title: "Xenvra — AI-Powered Resume Builder",
   description:
     "Build professional, ATS-friendly resumes with AI assistance. Choose from multiple templates, get real-time feedback, and export to PDF.",

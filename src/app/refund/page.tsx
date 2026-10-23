@@ -24,7 +24,7 @@ export default function RefundPage() {
         <p>You may request a full refund within 48 hours of purchase if you have not used any paid features (template unlocks, AI actions beyond free tier, or PDF exports without watermark).</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">How to Request a Refund</h2>
-        <p>Email <a href="mailto:support@kareixo.me" className="text-accent hover:underline">support@kareixo.me</a> with your registered email and Razorpay payment ID. Refunds are processed within 5-7 business days.</p>
+        <p>Email <a href="mailto:xenvra.official@gmail.com" className="text-accent hover:underline">xenvra.official@gmail.com</a> with your registered email and Razorpay payment ID. Refunds are processed within 5-7 business days.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">Non-Refundable</h2>
         <p>Refunds are not available after 48 hours or if paid features have been used. Partial refunds for unused days are not provided.</p>

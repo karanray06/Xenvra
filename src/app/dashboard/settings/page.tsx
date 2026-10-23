@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { User, CreditCard } from "lucide-react";
+import { DeleteAccountButton } from "@/components/settings/delete-account-button";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -14,7 +15,22 @@ export default async function SettingsPage() {
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
+
+  const { data: entitlement } = await supabase
+    .from("entitlements")
+    .select("plan, status, current_period_end")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const planName =
+    entitlement?.status === "active"
+      ? entitlement.plan === "pro"
+        ? "Pro Plan"
+        : entitlement.plan === "beginner"
+        ? "Beginner Plan"
+        : "Free Plan"
+      : "Free Plan";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
@@ -66,18 +82,23 @@ export default async function SettingsPage() {
           </div>
           <div className="flex items-center justify-between rounded-lg bg-surface-tertiary px-5 py-4">
             <div>
-              <p className="font-semibold text-text-primary">Free Plan</p>
+              <p className="font-semibold text-text-primary">{planName}</p>
               <p className="text-sm text-text-secondary">
-                1 resume, 3 templates, basic features
+                {planName === "Free Plan"
+                  ? "1 resume, 3 templates, basic features"
+                  : "Active subscription with pro templates and exports"}
               </p>
             </div>
-            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-accent">
-              Current
+            <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-accent capitalize">
+              {entitlement?.status || "Active"}
             </span>
           </div>
-          <p className="mt-4 text-sm text-text-tertiary">
-            Upgrade options with Razorpay payments coming in Phase 4.
-          </p>
+          {entitlement?.current_period_end && (
+            <p className="mt-3 text-xs text-text-tertiary">
+              Renewal / Expiry:{" "}
+              {new Date(entitlement.current_period_end).toLocaleDateString()}
+            </p>
+          )}
         </section>
 
         {/* Danger Zone */}
@@ -86,15 +107,10 @@ export default async function SettingsPage() {
             Danger Zone
           </h2>
           <p className="mb-4 text-sm text-text-secondary">
-            Deleting your account will permanently remove all your resumes and
-            data. This action cannot be undone.
+            Deleting your account will permanently remove all your resumes, saved data, and authentication profile.
+            This action cannot be undone.
           </p>
-          <button
-            disabled
-            className="rounded-lg border border-danger/30 px-4 py-2 text-sm font-medium text-danger transition-colors hover:bg-danger-light disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Delete Account (Coming Soon)
-          </button>
+          <DeleteAccountButton />
         </section>
       </div>
     </div>

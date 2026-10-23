@@ -39,7 +39,7 @@ export default function TermsPage() {
         <p>You may delete your account at any time. We reserve the right to suspend accounts that violate these terms. Upon deletion, all your data will be permanently removed.</p>
 
         <h2 className="text-lg font-semibold text-text-primary mt-8 mb-3">8. Contact</h2>
-        <p>For questions about these terms, email <a href="mailto:support@kareixo.me" className="text-accent hover:underline">support@kareixo.me</a>.</p>
+        <p>For questions about these terms, email <a href="mailto:xenvra.official@gmail.com" className="text-accent hover:underline">xenvra.official@gmail.com</a>.</p>
       </div>
     </div>
   );

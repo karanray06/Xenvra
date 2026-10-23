@@ -301,12 +301,12 @@ function PricingPreview() {
       description: "More power, more templates",
       features: [
         "3 resumes",
-        "All templates",
+        "All templates (Executive & Gradient Edge)",
         "PDF export (no watermark)",
-        "Full ATS score",
-        "~30 AI actions/day",
-        "5 JD tailorings/month",
-        "3 cover letters/month",
+        "Full ATS score checker",
+        "~30 AI writing actions/day",
+        "JD tailoring (Coming Soon)",
+        "Cover letter generator (Coming Soon)",
       ],
       cta: "Coming Soon",
       popular: false,
@@ -320,12 +320,10 @@ function PricingPreview() {
         "Unlimited resumes",
         "All templates + early access",
         "PDF + DOCX export",
-        "Unlimited AI actions",
-        "Unlimited JD tailoring",
-        "Unlimited cover letters",
-        "Version history",
-        "Application tracker",
-        "Public profile with analytics",
+        "Generous AI writing assist",
+        "Version history (Coming Soon)",
+        "Application tracker (Coming Soon)",
+        "Public profile with analytics (Coming Soon)",
       ],
       cta: "Coming Soon",
       popular: true,
@@ -529,7 +527,7 @@ function Footer() {
               Refund Policy
             </Link>
             <a
-              href="mailto:support@kareixo.me"
+              href="mailto:xenvra.official@gmail.com"
               className="transition-colors hover:text-text-secondary"
             >
               Contact

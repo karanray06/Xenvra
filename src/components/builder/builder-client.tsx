@@ -12,6 +12,7 @@ interface BuilderClientProps {
   initialTitle: string;
   initialTemplateId: string;
   initialData: ResumeData | null;
+  isPaid?: boolean;
 }
 
 export function BuilderClient({
@@ -20,6 +21,7 @@ export function BuilderClient({
   initialTitle,
   initialTemplateId,
   initialData,
+  isPaid = false,
 }: BuilderClientProps) {
   return (
     <ResumeProvider
@@ -38,7 +40,7 @@ export function BuilderClient({
           </div>
           {/* Right: Preview */}
           <div className="flex-1 overflow-hidden">
-            <ResumePreview />
+            <ResumePreview isPaid={isPaid} />
           </div>
         </div>
       </div>
