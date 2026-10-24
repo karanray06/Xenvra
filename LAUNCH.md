@@ -1,106 +1,98 @@
-# Xenvra Launch Checklist & Runbook
+# Xenvra Studio v2 — Production Launch Runbook
 
-Welcome to the production launch documentation for **Xenvra** (Next.js 16 App Router, React 19, Supabase, Tailwind CSS, Razorpay).
-
----
-
-## 1. Environment Variables (.env.production / Vercel Project Settings)
-
-Ensure the following environment variables are set in your Vercel deployment:
-
-| Variable | Description | Sensitivity |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL (`https://<project-ref>.supabase.co`) | Public |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Public Key | Public |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Admin / Service Role Key (used for account deletion, webhooks, crons) | **Secret (Server Only)** |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay Key ID (`rzp_test_...` or `rzp_live_...`) | Public |
-| `RAZORPAY_KEY_SECRET` | Razorpay Secret Key for HMAC signature verification | **Secret (Server Only)** |
-| `RAZORPAY_WEBHOOK_SECRET` | Secret configured in Razorpay Webhooks dashboard | **Secret (Server Only)** |
-| `CRON_SECRET` | Bearer token securing `/api/cron/expire` | **Secret (Server Only)** |
-| `NEXT_PUBLIC_APP_URL` | Public application URL (default: dynamic `getAppBaseUrl()` fallback) | Public |
-| `OPENAI_API_KEY` | Optional: OpenAI API Key for enhanced AI rewriting (heuristic fallback active) | **Secret (Server Only)** |
+Production repository: `karanray06/Xenvra` · Production Domain: `https://xenvraresume.vercel.app`
+Tech Stack: Next.js 16.4.3 (Turbopack, App Router), React 19, TypeScript, Tailwind CSS v4, Supabase (RLS), Vercel.
 
 ---
 
-## 2. Supabase SQL Migrations (Execute in order)
+## 1. Environment Variables Configuration
 
-In your Supabase project dashboard -> **SQL Editor**, execute the migration scripts in numerical sequence:
+Set the following variables in **Vercel Dashboard → Settings → Environment Variables**:
+
+| Variable | Description | Target | Sensitivity |
+| :--- | :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL (`https://<ref>.supabase.co`) | Production, Preview | Public |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Public Key | Production, Preview | Public |
+| `SUPABASE_SERVICE_ROLE_KEY` | Admin Key for atomic RPCs, webhooks, crons | Production only | **Critical Secret** |
+| `PAYMENT_PROVIDER` | Selected provider (`razorpay` primary, `youpi` experimental) | Production, Preview | Config |
+| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay Key ID (`rzp_live_...` or `rzp_test_...`) | Production, Preview | Public |
+| `RAZORPAY_KEY_SECRET` | Razorpay Secret Key for HMAC signature verification | Production only | **Critical Secret** |
+| `RAZORPAY_WEBHOOK_SECRET` | Webhook secret configured in Razorpay dashboard | Production only | **Critical Secret** |
+| `CRON_SECRET` | Bearer token securing `/api/cron/expire` | Production only | **Critical Secret** |
+| `NEXT_PUBLIC_APP_URL` | Public application URL (`https://xenvraresume.vercel.app`) | Production, Preview | Public |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL for distributed rate limiting | Production only | **Secret** |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST Token | Production only | **Secret** |
+| `OPENAI_API_KEY` | Optional: LLM provider key for AI writing features | Production only | **Secret** |
+
+---
+
+## 2. Supabase SQL Migrations (Sequential Order)
+
+Execute the migrations in numerical order in **Supabase Dashboard → SQL Editor**:
 
 1. `supabase/migrations/001_initial_schema.sql`
-   - Sets up initial tables (`profiles`, `resumes`, `resume_versions`, `plans`, `entitlements`, `payments`, `usage_events`, `job_applications`, `public_profiles`, `profile_views`).
-   - Enables RLS on all tables.
+   - Base tables (`profiles`, `resumes`, `plans`, `entitlements`, `payments`, `job_applications`).
 2. `supabase/migrations/002_launch_fixes.sql`
-   - Hardens `auth.users` trigger (`handle_new_user`) for automatic profile & entitlement provisioning.
-   - Adds `WITH CHECK (auth.uid() = user_id)` to RLS policies.
-   - Enforces plan limits via `check_resume_limit()` BEFORE INSERT trigger.
-   - Adds `version` (optimistic locking) and `design_json` (Penpot vector state) columns.
-   - Adds `resumes` and `entitlements` to `supabase_realtime` publication.
+   - User provisioning trigger, `WITH CHECK (auth.uid() = user_id)`, optimistic concurrency.
 3. `supabase/migrations/003_complete_features.sql`
-   - Creates `cover_letters` table with user RLS.
-   - Adds anonymous insert policy for `profile_views`.
-   - Adds real-time publication for `job_applications` and `cover_letters`.
+   - `cover_letters` table, real-time publications.
+4. `supabase/migrations/004_payments_hardening.sql`
+   - **Crucial Security Phase A**: Single `fulfil_payment` SECURITY DEFINER RPC with row locking (`FOR UPDATE`).
+   - Replaces client-triggered fulfilment with server-verified webhook only.
+   - Idempotency constraints on `(provider, provider_order_id)` and `(provider, provider_payment_id)`.
+   - Atomic `consume_ai_credit` function.
+5. `supabase/migrations/005_studio.sql`
+   - Flagship Studio engine tables: `designs` table with `< 2MB` document size constraint and realtime replication.
+   - `assets` table with private storage bucket RLS quotas (Free 50MB, Pro 2GB).
 
 ---
 
-## 3. Razorpay Dashboard Setup
+## 3. Payment Gateway Configuration
 
-1. **API Keys**:
-   - Go to **Razorpay Dashboard** -> **Settings** -> **API Keys**.
-   - Generate Test Keys for initial staging verification, then Live Keys for production.
+### Primary Gateway: Razorpay
+1. **API Keys**: In **Razorpay Dashboard → Settings → API Keys**, generate Live Keys upon KYC approval.
 2. **Webhooks Setup**:
-   - Go to **Settings** -> **Webhooks** -> **Add New Webhook**.
-   - URL: `https://<your-domain>/api/billing/webhook`
-   - Secret: Set a secure secret and copy it into `RAZORPAY_WEBHOOK_SECRET`.
-   - Active Events:
+   - URL: `https://xenvraresume.vercel.app/api/billing/webhook/razorpay`
+   - Secret: Set secure random string matching `RAZORPAY_WEBHOOK_SECRET`.
+   - Subscribed Events:
      - `payment.captured`
      - `order.paid`
+     - `payment.failed`
      - `refund.processed`
+3. **Receipts**: Automatic printable receipts generated client-side from verified order records.
+
+### Experimental Gateway: YouPI-PG (Off by Default)
+- Enable only if `PAYMENT_PROVIDER=youpi` is explicitly set.
+- Requires dedicated business VPA with unique timestamped amounts (e.g. ₹49.07).
+- Replay protection enforces strict 5-minute clock skew limits and timing-safe HMAC checks.
+- Any mismatched amount triggers `needs_review` status without granting automatic entitlement.
 
 ---
 
-## 4. Google OAuth Setup (Supabase Auth)
+## 4. Feature Verification Smoke Test Matrix
 
-1. In **Google Cloud Console**, create an OAuth 2.0 Client ID.
-2. Set Authorized Redirect URI: `https://<supabase-project-ref>.supabase.co/auth/v1/callback`.
-3. In **Supabase Dashboard** -> **Authentication** -> **Providers** -> **Google**:
-   - Enable Google provider.
-   - Enter Client ID and Client Secret.
-
----
-
-## 5. Vercel Deployment & Cron Jobs
-
-1. Connect the GitHub repository `https://github.com/karanray06/Xenvra`.
-2. Deploy branch `launch/v1` or merge into `main`.
-3. Vercel automatically reads `vercel.json` and schedules:
-   - `GET /api/cron/expire` once daily at `00:00 UTC` with `CRON_SECRET` authorization.
-
----
-
-## 6. Feature Verification Smoke Test Matrix
-
-| Feature | Route / Endpoint | Verification Method |
-| :--- | :--- | :--- |
-| **Auth & Redirects** | `/login`, `/auth/callback` | Log in via Google or email; verify redirect is safe |
-| **Resume Builder** | `/dashboard/builder` | Edit fields, verify autosave badge, retry on offline |
-| **Penpot Vector Studio** | `/dashboard/builder` -> *Vector Studio* | Drag shapes, add text, reorder layers, export SVG/PNG |
-| **ATS Scoring** | `/dashboard/builder` -> *ATS Score* | Real-time score calculation, keyword match against JD |
-| **AI Writing Assist** | `/dashboard/builder` -> *AI Assist* | Strengthen bullets, conciseness, grammar polish |
-| **Pro DOCX Export** | `/api/resumes/[id]/docx` | Download formatted Word `.docx` document |
-| **PDF Print & Watermark** | `/print/[id]` | Free tier has diagonal watermark; paid tiers watermark-free |
-| **Job Tailoring** | `/dashboard/tailor` | Paste JD, view ATS boost, save as new tailored resume |
-| **Cover Letter Generator**| `/dashboard/cover-letters` | Generate customized cover letter, print / copy |
-| **Version History** | `/dashboard/builder` -> *History* | Snapshot timeline, 1-click historical restore |
-| **Job Application Tracker**| `/dashboard/applications` | Kanban board across 5 stages, status advance |
-| **Public Portfolio** | `/p/[slug]`, `/dashboard/settings` | Public link sharing with view counter analytics |
-| **Billing & Payments** | `/dashboard/billing` | Razorpay Checkout modal, dynamic plan upgrade, receipts |
+| Feature | Surface / Route | Verification Method | Status |
+| :--- | :--- | :--- | :--- |
+| **Health Check** | `GET /api/health` | Returns 200 `{ status: "ok" }` with zero leaked secrets | Verified |
+| **Studio Engine** | `/studio`, `/dashboard/studio` | Pan/zoom, 36+ templates, drag photo frames, recolour | Verified |
+| **Live ATS Drawer** | `/studio` (Top Bar) | Real-time score meter, section detection, vector text check | Verified |
+| **Bulk Certificates** | `/studio` (Top Bar) | CSV upload, multi-recipient generation into downloadable ZIP | Verified |
+| **Career Kit Sync** | `/studio` (Top Bar) | 1-click data-binding sync from profile into canvas text | Verified |
+| **Exporters** | `/studio` (Top Bar) | Vector ATS PDF, editable PPTX, SVG, and high-res PNG | Verified |
+| **Present Mode** | `/studio` (Top Bar) | Full-screen keyboard slide presentation | Verified |
+| **Public Gallery** | `/templates`, `/templates/[kind]` | Server-rendered SSG catalog with JSON-LD & filter pills | Verified |
+| **Blog Guides** | `/blog`, `/blog/[slug]` | 5 launch articles, table of contents, reading time | Verified |
+| **Jobs Search & Kanban** | `/dashboard/jobs` | Deterministic match scores, `@dnd-kit` drag, safe `/go/` apply | Verified |
+| **Billing Live Tracking**| `/dashboard/settings#billing` | 4-state real-time subscription, 15:00 countdown, status sync | Verified |
 
 ---
 
-## 7. Rollback Plan
+## 5. Rollback Procedures
 
-If an urgent production issue occurs:
-1. **Instant Rollback**: In Vercel Deployment Dashboard, select the previous stable deployment and click **Promote to Production** (takes < 10 seconds).
+If an unexpected critical issue occurs in production:
+1. **Instant Vercel Rollback**:
+   - Navigate to **Vercel Dashboard → Deployments**.
+   - Locate the previous stable deployment (pinned) and click **Promote to Production**.
+   - DNS and edge routing immediately point to the previous bundle in < 10 seconds.
 2. **Database Rollback**:
-   - Supabase maintains automated daily point-in-time recovery (PITR).
-   - All migrations are backwards-compatible (additive columns with safe defaults).
+   - Migrations 004 & 005 are purely additive (new tables `designs`, `assets`, and renamed payment columns). Previous tables remain backward-compatible.
