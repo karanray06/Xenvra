@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // FAIL CLOSED: If CRON_SECRET is not configured, reject all requests
+  if (!cronSecret) {
+    console.error("[Security] Cron execution rejected: CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Cron service unavailable" }, { status: 500 });
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -26,7 +32,8 @@ export async function GET(request: Request) {
       .select("id, user_id, plan");
 
     if (error) {
-      throw error;
+      console.error("Cron expiry database error:", error);
+      return NextResponse.json({ error: "Failed to expire entitlements" }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -35,8 +42,7 @@ export async function GET(request: Request) {
       timestamp: nowIso,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Cron execution failed";
-    console.error("Cron expiry error:", err);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error("Cron expiry unhandled error:", err);
+    return NextResponse.json({ error: "Cron execution failed" }, { status: 500 });
   }
 }

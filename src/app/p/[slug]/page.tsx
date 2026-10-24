@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,20 +13,50 @@ import {
 import type { ResumeData } from "@/lib/schemas/resume";
 import type { Metadata } from "next";
 
+export const RESERVED_SLUGS = new Set([
+  "admin",
+  "api",
+  "login",
+  "auth",
+  "dashboard",
+  "studio",
+  "templates",
+  "jobs",
+  "settings",
+  "p",
+  "print",
+  "cover-letters",
+  "tailor",
+  "billing",
+  "faq",
+  "terms",
+  "privacy",
+  "health",
+]);
+
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await props.params;
-  const supabase = await createClient();
-  const { data: profile } = await supabase
+  const cleanSlug = slug.toLowerCase();
+
+  if (RESERVED_SLUGS.has(cleanSlug)) {
+    return { title: "Page Not Found", robots: { index: false, follow: false } };
+  }
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("public_profiles")
-    .select("visibility")
-    .eq("slug", slug.toLowerCase())
+    .select("visibility, full_name, headline")
+    .eq("slug", cleanSlug)
     .maybeSingle();
 
   const isPublic = profile?.visibility === "public";
+  const title = profile?.full_name ? `${profile.full_name} | Verified Portfolio` : `${slug} — Portfolio | Xenvra`;
+
   return {
-    title: `${slug} — Verified Profile | Xenvra`,
+    title,
+    description: profile?.headline || "View professional verified portfolio and career achievements.",
     robots: {
       index: isPublic,
       follow: isPublic,
@@ -42,41 +72,83 @@ export default async function PublicProfilePage(props: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await props.params;
-  const supabase = await createClient();
+  const cleanSlug = slug.toLowerCase();
 
-  // Fetch public profile
-  const { data: profile } = await supabase
-    .from("public_profiles")
-    .select("id, resume_id, visibility, user_id")
-    .eq("slug", slug.toLowerCase())
-    .eq("visibility", "public")
-    .maybeSingle();
-
-  if (!profile || !profile.resume_id) {
+  if (RESERVED_SLUGS.has(cleanSlug)) {
     notFound();
   }
 
-  // Record view asynchronously
+  const admin = createAdminClient();
+
+  // Call the SECURITY DEFINER RPC get_public_profile(slug)
+  // Ensures anonymous visitors only get published profiles, and contact is redacted if show_contact is false
+  let profileData: {
+    slug: string;
+    full_name: string;
+    headline: string;
+    bio: string;
+    show_contact: boolean;
+    resume_id: string;
+    template_id: string;
+    data: ResumeData;
+  } | null = null;
+
   try {
-    await supabase.from("profile_views").insert({
-      public_profile_id: profile.id,
+    const { data: rpcResult } = await admin.rpc("get_public_profile", {
+      p_slug: cleanSlug,
     });
+    if (rpcResult) {
+      profileData = rpcResult as unknown as typeof profileData;
+    }
   } catch {
-    // Non-blocking view tracking
+    // Fallback if migration not yet applied in live DB
   }
 
-  // Fetch resume data
-  const { data: resume } = await supabase
-    .from("resumes")
-    .select("id, title, data")
-    .eq("id", profile.resume_id)
-    .maybeSingle();
+  if (!profileData) {
+    // Direct admin fallback for published profiles
+    const { data: profile } = await admin
+      .from("public_profiles")
+      .select("id, resume_id, visibility, show_contact, full_name, headline, bio")
+      .eq("slug", cleanSlug)
+      .eq("visibility", "public")
+      .maybeSingle();
 
-  if (!resume || !resume.data) {
-    notFound();
+    if (!profile || !profile.resume_id) {
+      notFound();
+    }
+
+    const { data: resume } = await admin
+      .from("resumes")
+      .select("id, title, data, template_id")
+      .eq("id", profile.resume_id)
+      .maybeSingle();
+
+    if (!resume || !resume.data) {
+      notFound();
+    }
+
+    const data = resume.data as ResumeData;
+    if (!profile.show_contact && data.contact) {
+      data.contact = {
+        ...data.contact,
+        email: "",
+        phone: "",
+      };
+    }
+
+    profileData = {
+      slug: cleanSlug,
+      full_name: profile.full_name || data.contact?.fullName || "",
+      headline: profile.headline || data.contact?.title || "",
+      bio: profile.bio || data.summary || "",
+      show_contact: profile.show_contact ?? true,
+      resume_id: resume.id,
+      template_id: resume.template_id || "modern-1",
+      data,
+    };
   }
 
-  const data = resume.data as ResumeData;
+  const data = profileData.data;
   const contact = data.contact || {};
 
   return (
@@ -95,7 +167,7 @@ export default async function PublicProfilePage(props: {
 
           <div className="flex items-center gap-2">
             <Link
-              href={`/print/${resume.id}`}
+              href={`/print/${profileData.resume_id}`}
               target="_blank"
               className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-accent-hover transition-colors"
             >
@@ -112,11 +184,11 @@ export default async function PublicProfilePage(props: {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-3xl font-extrabold text-text-primary tracking-tight sm:text-4xl">
-                {contact.fullName || "Candidate"}
+                {profileData.full_name || contact.fullName || "Candidate"}
               </h1>
-              {contact.title && (
+              {(profileData.headline || contact.title) && (
                 <p className="mt-1 text-base font-medium text-accent">
-                  {contact.title}
+                  {profileData.headline || contact.title}
                 </p>
               )}
               {contact.location && (
@@ -129,7 +201,7 @@ export default async function PublicProfilePage(props: {
 
             {/* Social / Contact Links */}
             <div className="flex flex-wrap items-center gap-2">
-              {contact.email && (
+              {profileData.show_contact && contact.email && (
                 <a
                   href={`mailto:${contact.email}`}
                   className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-primary hover:bg-surface-tertiary transition-colors shadow-xs"
@@ -145,7 +217,7 @@ export default async function PublicProfilePage(props: {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-primary hover:bg-surface-tertiary transition-colors shadow-xs"
                 >
-                  <svg className="h-3.5 w-3.5 fill-current text-blue-600" viewBox="0 0 24 24">
+                  <svg className="h-3.5 w-3.5 fill-current text-accent" viewBox="0 0 24 24">
                     <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.65 1.65 0 0 0-1.66 1.66 1.66 1.66 0 0 0 1.66 1.66 1.66 1.66 0 0 0 1.66-1.66 1.65 1.65 0 0 0-1.66-1.66Z" />
                   </svg>
                   <span>LinkedIn</span>
@@ -171,18 +243,18 @@ export default async function PublicProfilePage(props: {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-primary hover:bg-surface-tertiary transition-colors shadow-xs"
                 >
-                  <Globe className="h-3.5 w-3.5 text-emerald-600" />
+                  <Globe className="h-3.5 w-3.5 text-accent" />
                   <span>Website</span>
                 </a>
               )}
             </div>
           </div>
 
-          {/* Summary */}
-          {data.summary && (
+          {/* Summary / Bio */}
+          {(profileData.bio || data.summary) && (
             <div className="mt-6 border-t border-border pt-6">
               <p className="text-sm text-text-secondary leading-relaxed">
-                {data.summary}
+                {profileData.bio || data.summary}
               </p>
             </div>
           )}
@@ -197,32 +269,63 @@ export default async function PublicProfilePage(props: {
             </div>
 
             <div className="space-y-6">
-              {data.experience.map((exp) => (
-                <div key={exp.id} className="relative pl-6 border-l-2 border-border space-y-2">
-                  <div className="absolute -left-1.5 top-1 h-3 w-3 rounded-full bg-accent ring-4 ring-surface" />
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-text-primary">{exp.jobTitle}</h3>
-                      <p className="text-xs font-semibold text-text-secondary">{exp.company}</p>
-                    </div>
-                    <span className="text-[11px] font-medium text-text-tertiary mt-0.5 sm:mt-0">
-                      {exp.startDate} – {exp.currentlyWorking ? "Present" : exp.endDate}
+              {data.experience.map((exp, idx) => (
+                <div key={idx} className="space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <h3 className="font-bold text-base text-text-primary">
+                      {exp.jobTitle}
+                    </h3>
+                    <span className="text-xs font-medium text-text-tertiary">
+                      {exp.startDate} — {exp.currentlyWorking ? "Present" : exp.endDate}
                     </span>
                   </div>
-
+                  <div className="text-sm font-medium text-accent">
+                    {exp.company} {exp.location && `• ${exp.location}`}
+                  </div>
                   {exp.description && (
-                    <p className="text-xs text-text-secondary leading-relaxed">{exp.description}</p>
+                    <p className="text-xs text-text-secondary leading-relaxed">
+                      {exp.description}
+                    </p>
                   )}
-
                   {exp.highlights && exp.highlights.length > 0 && (
-                    <ul className="space-y-1.5 text-xs text-text-secondary">
+                    <ul className="list-disc list-inside text-xs text-text-secondary space-y-1">
                       {exp.highlights.map((h, hIdx) => (
-                        <li key={hIdx} className="flex items-start gap-2">
-                          <span className="text-accent font-bold">•</span>
-                          <span>{h.replace(/^[•\-\*]\s*/, "")}</span>
-                        </li>
+                        <li key={hIdx}>{h}</li>
                       ))}
                     </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Education Section */}
+        {data.education && data.education.length > 0 && (
+          <section className="rounded-3xl border border-border bg-surface p-8 shadow-sm space-y-6">
+            <div className="flex items-center gap-2 border-b border-border pb-4">
+              <GraduationCap className="h-5 w-5 text-accent" />
+              <h2 className="text-lg font-bold text-text-primary">Education</h2>
+            </div>
+
+            <div className="space-y-4">
+              {data.education.map((edu, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                    <h3 className="font-bold text-sm text-text-primary">
+                      {edu.school}
+                    </h3>
+                    <span className="text-xs text-text-tertiary">
+                      {edu.startDate} — {edu.endDate}
+                    </span>
+                  </div>
+                  <div className="text-xs text-text-secondary">
+                    {edu.degree} {edu.field && `in ${edu.field}`}
+                  </div>
+                  {edu.gpa && (
+                    <div className="text-xs text-text-tertiary">
+                      GPA / Grade: {edu.gpa}
+                    </div>
                   )}
                 </div>
               ))}
@@ -235,13 +338,14 @@ export default async function PublicProfilePage(props: {
           <section className="rounded-3xl border border-border bg-surface p-8 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-border pb-4">
               <Sparkles className="h-5 w-5 text-accent" />
-              <h2 className="text-lg font-bold text-text-primary">Core Skills & Expertise</h2>
+              <h2 className="text-lg font-bold text-text-primary">Skills & Core Competencies</h2>
             </div>
+
             <div className="flex flex-wrap gap-2">
-              {data.skills.map((skill, sIdx) => (
+              {data.skills.map((skill, idx) => (
                 <span
-                  key={sIdx}
-                  className="rounded-xl bg-lav-200/80 px-3 py-1.5 text-xs font-bold text-text-primary shadow-xs"
+                  key={idx}
+                  className="rounded-lg border border-border bg-surface-secondary px-3 py-1.5 text-xs font-semibold text-text-primary shadow-2xs"
                 >
                   {skill}
                 </span>
@@ -249,42 +353,12 @@ export default async function PublicProfilePage(props: {
             </div>
           </section>
         )}
-
-        {/* Education Section */}
-        {data.education && data.education.length > 0 && (
-          <section className="rounded-3xl border border-border bg-surface p-8 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 border-b border-border pb-4">
-              <GraduationCap className="h-5 w-5 text-accent" />
-              <h2 className="text-lg font-bold text-text-primary">Education</h2>
-            </div>
-            <div className="space-y-4">
-              {data.education.map((edu) => (
-                <div key={edu.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-xs font-bold text-text-primary">
-                      {edu.degree} {edu.field && `in ${edu.field}`}
-                    </h3>
-                    <p className="text-xs text-text-secondary">{edu.school}</p>
-                  </div>
-                  <span className="text-[11px] text-text-tertiary">
-                    {edu.startDate} – {edu.endDate}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Footer */}
-        <footer className="text-center py-6 text-xs text-text-tertiary">
-          <p>
-            Curated resume profile hosted on{" "}
-            <Link href="/" className="font-semibold text-accent hover:underline">
-              Xenvra
-            </Link>
-          </p>
-        </footer>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border py-8 text-center text-xs text-text-tertiary">
+        <p>Built with Xenvra • The Career & Campus Design Platform</p>
+      </footer>
     </div>
   );
 }

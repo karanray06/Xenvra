@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { parseJson, verifyMutationOrigin } from "@/lib/api-utils";
 import { z } from "zod";
 
-const applicationSchema = z.object({
+const createApplicationSchema = z.object({
   id: z.string().uuid().optional(),
   company: z.string().min(1).max(200),
   role: z.string().min(1).max(200),
-  jd_text: z.string().optional().default(""),
+  jd_text: z.string().max(20000).optional().default(""),
   status: z.enum(["saved", "applied", "interview", "offer", "rejected"]).default("saved"),
-  notes: z.string().optional().default(""),
+  notes: z.string().max(5000).optional().default(""),
+  resume_id: z.string().uuid().nullable().optional(),
+  applied_at: z.string().nullable().optional(),
+});
+
+const updateApplicationSchema = z.object({
+  id: z.string().uuid(),
+  company: z.string().min(1).max(200).optional(),
+  role: z.string().min(1).max(200).optional(),
+  jd_text: z.string().max(20000).optional(),
+  status: z.enum(["saved", "applied", "interview", "offer", "rejected"]).optional(),
+  notes: z.string().max(5000).optional(),
   resume_id: z.string().uuid().nullable().optional(),
   applied_at: z.string().nullable().optional(),
 });
@@ -31,17 +43,22 @@ export async function GET() {
       .order("updated_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("Fetch applications query error:", error);
+      return NextResponse.json({ error: "Failed to fetch applications" }, { status: 500 });
     }
 
     return NextResponse.json(apps || []);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Fetch applications error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Fetch applications unhandled error:", error);
+    return NextResponse.json({ error: "Failed to fetch applications" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
+  if (!verifyMutationOrigin(req)) {
+    return NextResponse.json({ error: "Cross-site requests prohibited" }, { status: 403 });
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -52,18 +69,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const parseResult = applicationSchema.safeParse(body);
+    const { data, errorResponse } = await parseJson(req, createApplicationSchema);
+    if (errorResponse) return errorResponse;
+    if (!data) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-    if (!parseResult.success) {
-      return NextResponse.json(
-        { error: "Invalid payload", details: parseResult.error.format() },
-        { status: 400 }
-      );
-    }
-
-    const { company, role, jd_text, status, notes, resume_id, applied_at } =
-      parseResult.data;
+    const { company, role, jd_text, status, notes, resume_id, applied_at } = data;
 
     const { data: newApp, error } = await supabase
       .from("job_applications")
@@ -81,17 +91,22 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("Insert application query error:", error);
+      return NextResponse.json({ error: "Failed to create application" }, { status: 500 });
     }
 
-    return NextResponse.json(newApp);
+    return NextResponse.json(newApp, { status: 201 });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Create application error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Create application unhandled error:", error);
+    return NextResponse.json({ error: "Failed to create application" }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
+  if (!verifyMutationOrigin(req)) {
+    return NextResponse.json({ error: "Cross-site requests prohibited" }, { status: 403 });
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -102,18 +117,19 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { id, status, notes, company, role, applied_at } = body;
+    const { data, errorResponse } = await parseJson(req, updateApplicationSchema);
+    if (errorResponse) return errorResponse;
+    if (!data) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-    if (!id) {
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    }
+    const { id, status, notes, company, role, jd_text, resume_id, applied_at } = data;
 
-    const updates: Record<string, unknown> = {};
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (status !== undefined) updates.status = status;
     if (notes !== undefined) updates.notes = notes;
     if (company !== undefined) updates.company = company;
     if (role !== undefined) updates.role = role;
+    if (jd_text !== undefined) updates.jd_text = jd_text;
+    if (resume_id !== undefined) updates.resume_id = resume_id;
     if (applied_at !== undefined) updates.applied_at = applied_at;
 
     const { data: updatedApp, error } = await supabase
@@ -125,17 +141,22 @@ export async function PUT(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("Update application database error:", error);
+      return NextResponse.json({ error: "Failed to update application" }, { status: 500 });
     }
 
     return NextResponse.json(updatedApp);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Update application error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Update application unhandled error:", error);
+    return NextResponse.json({ error: "Failed to update application" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
+  if (!verifyMutationOrigin(req)) {
+    return NextResponse.json({ error: "Cross-site requests prohibited" }, { status: 403 });
+  }
+
   try {
     const supabase = await createClient();
     const {
@@ -150,7 +171,7 @@ export async function DELETE(req: NextRequest) {
     const id = searchParams.get("id");
 
     if (!id) {
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+      return NextResponse.json({ error: "Missing application id" }, { status: 400 });
     }
 
     const { error } = await supabase
@@ -160,12 +181,13 @@ export async function DELETE(req: NextRequest) {
       .eq("user_id", user.id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error("Delete application database error:", error);
+      return NextResponse.json({ error: "Failed to delete application" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Delete application error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Delete application unhandled error:", error);
+    return NextResponse.json({ error: "Failed to delete application" }, { status: 500 });
   }
 }

@@ -52,14 +52,39 @@ export async function getUserPlanInfo(userId: string): Promise<UserPlanInfo> {
   };
 }
 
+/**
+ * Checks and atomically records AI usage quota.
+ */
 export async function checkAndRecordAiUsage(
   userId: string,
-  tokens = 100
-): Promise<{ allowed: boolean; remaining: number }> {
-  const planInfo = await getUserPlanInfo(userId);
+  tokens = 1,
+  action = "ai_improve"
+): Promise<{ allowed: boolean; remaining: number; reason?: string }> {
   const admin = createAdminClient();
 
-  // Count usage events since start of today (UTC)
+  // Call the atomic consume_ai_credit RPC function if available
+  try {
+    const { data: rpcResult, error: rpcErr } = await admin.rpc("consume_ai_credit", {
+      p_user_id: userId,
+      p_action: action,
+    });
+
+    if (!rpcErr && rpcResult) {
+      const allowed = Boolean(rpcResult.allowed);
+      const limit = Number(rpcResult.limit || 5);
+      const used = Number(rpcResult.used || 0);
+      return {
+        allowed,
+        remaining: Math.max(0, limit - used),
+        reason: rpcResult.reason,
+      };
+    }
+  } catch (err) {
+    console.warn("consume_ai_credit RPC fallback to direct query:", err);
+  }
+
+  // Fallback direct check
+  const planInfo = await getUserPlanInfo(userId);
   const startOfToday = new Date();
   startOfToday.setUTCHours(0, 0, 0, 0);
 
@@ -67,19 +92,22 @@ export async function checkAndRecordAiUsage(
     .from("usage_events")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .eq("action", "ai_improve")
+    .eq("action", action)
     .gte("created_at", startOfToday.toISOString());
 
   const usedToday = count || 0;
 
   if (usedToday >= planInfo.maxAiDaily) {
-    return { allowed: false, remaining: 0 };
+    return {
+      allowed: false,
+      remaining: 0,
+      reason: `Daily AI limit reached (${usedToday}/${planInfo.maxAiDaily}). Upgrade on the Billing page to increase limits.`,
+    };
   }
 
-  // Record usage event
   await admin.from("usage_events").insert({
     user_id: userId,
-    action: "ai_improve",
+    action,
     tokens,
   });
 
@@ -87,4 +115,33 @@ export async function checkAndRecordAiUsage(
     allowed: true,
     remaining: Math.max(0, planInfo.maxAiDaily - usedToday - 1),
   };
+}
+
+/**
+ * Refunds an AI credit if the external LLM provider call fails.
+ */
+export async function refundAiUsage(userId: string, action = "ai_improve"): Promise<void> {
+  const admin = createAdminClient();
+  try {
+    await admin.rpc("refund_ai_credit", {
+      p_user_id: userId,
+      p_action: action,
+    });
+  } catch {
+    // Direct delete of latest usage event within 5 mins
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: latest } = await admin
+      .from("usage_events")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("action", action)
+      .gte("created_at", fiveMinAgo)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latest?.id) {
+      await admin.from("usage_events").delete().eq("id", latest.id);
+    }
+  }
 }

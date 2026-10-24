@@ -5,16 +5,14 @@ import { useRouter } from "next/navigation";
 import {
   Check,
   Loader2,
-  Sparkles,
   Clock,
   ArrowRight,
   Receipt,
-  QrCode,
   Copy,
   ExternalLink,
   ShieldCheck,
-  CreditCard,
   X,
+  Sparkles,
 } from "lucide-react";
 
 interface Plan {
@@ -67,21 +65,14 @@ export function BillingClient({
   plans,
   entitlement,
   payments,
-  userEmail,
-  userName,
 }: BillingClientProps) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [youpiModal, setYoupiModal] = useState<YoupiModalState | null>(null);
-  const [activeTab, setActiveTab] = useState<"upi" | "card">("upi");
-  const [utrInput, setUtrInput] = useState<string>("");
-  const [cardNumber, setCardNumber] = useState<string>("");
-  const [cardExpiry, setCardExpiry] = useState<string>("");
-  const [cardCvv, setCardCvv] = useState<string>("");
-  const [cardName, setCardName] = useState<string>("");
-  const [verifyingPayment, setVerifyingPayment] = useState<boolean>(false);
   const [copiedVpa, setCopiedVpa] = useState<boolean>(false);
+  const [pollStatus, setPollStatus] = useState<string>("awaiting_payment");
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(900); // 15 min countdown
   const router = useRouter();
 
   const currentPlanId = entitlement?.status === "active" ? entitlement.plan : "free";
@@ -115,7 +106,8 @@ export function BillingClient({
         planName: data.plan?.name || planId.toUpperCase(),
         planId,
       });
-      setUtrInput("");
+      setPollStatus("awaiting_payment");
+      setSecondsRemaining(900);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
@@ -123,148 +115,54 @@ export function BillingClient({
     }
   };
 
-  const handleConfirmUtr = async () => {
+  // 15-minute countdown timer
+  useEffect(() => {
     if (!youpiModal) return;
-    setVerifyingPayment(true);
-    setError(null);
-
-    try {
-      const verifyRes = await fetch("/api/billing/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: youpiModal.orderId,
-          utr: utrInput.trim() || `UTR_${Date.now()}`,
-          plan: youpiModal.planId,
-        }),
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
       });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [youpiModal]);
 
-      const verifyData = await verifyRes.json();
-      if (verifyRes.ok && verifyData.success) {
-        setSuccessMessage(
-          `🎉 Success! Your account has been upgraded to the ${youpiModal.planName} plan.`
-        );
-        setYoupiModal(null);
-        router.refresh();
-      } else {
-        throw new Error(verifyData.error || "Payment verification failed. Please check your UTR.");
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Verification error");
-    } finally {
-      setVerifyingPayment(false);
-    }
-  };
-
-  // Automatic real-time payment detection via background polling
+  // Server-authoritative status polling against /api/billing/status (every 3 seconds)
   useEffect(() => {
     if (!youpiModal) return;
 
     let isMounted = true;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/billing/verify?order_id=${encodeURIComponent(youpiModal.orderId)}`);
+        const res = await fetch(`/api/billing/status?order_id=${encodeURIComponent(youpiModal.orderId)}`);
         if (!res.ok) return;
         const data = await res.json();
-        if (data.verified && isMounted) {
+        if (data.paid && isMounted) {
           clearInterval(interval);
+          setPollStatus("paid");
           setSuccessMessage(
-            `🎉 Payment Automatically Verified! Welcome to the ${youpiModal.planName} plan.`
+            `🎉 Payment Confirmed! Your account has been upgraded to the ${youpiModal.planName} plan.`
           );
-          setYoupiModal(null);
-          router.refresh();
+          setTimeout(() => {
+            setYoupiModal(null);
+            router.refresh();
+          }, 1500);
+        } else if (data.status && isMounted) {
+          setPollStatus(data.status);
         }
       } catch {
         // Continue polling silently
       }
-    }, 2500);
+    }, 3000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
   }, [youpiModal, router]);
-
-  const handleAutoConfirm = async () => {
-    if (!youpiModal) return;
-    setVerifyingPayment(true);
-    setError(null);
-
-    try {
-      const verifyRes = await fetch("/api/billing/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: youpiModal.orderId,
-          auto_confirm: true,
-          plan: youpiModal.planId,
-        }),
-      });
-
-      const verifyData = await verifyRes.json();
-      if (verifyRes.ok && verifyData.success) {
-        setSuccessMessage(
-          `🎉 Payment Confirmed! Your account has been upgraded to ${youpiModal.planName}.`
-        );
-        setYoupiModal(null);
-        router.refresh();
-      } else {
-        throw new Error(verifyData.error || "Automatic confirmation failed.");
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Confirmation error");
-    } finally {
-      setVerifyingPayment(false);
-    }
-  };
-
-  const handleConfirmCard = async () => {
-    if (!youpiModal) return;
-    const cleanCard = cardNumber.replace(/\s+/g, "");
-    if (cleanCard.length < 12) {
-      setError("Please enter a valid card number (FamPay / Debit / Credit)");
-      return;
-    }
-    if (!cardExpiry.includes("/") || cardExpiry.length < 5) {
-      setError("Please enter card expiry in MM/YY format");
-      return;
-    }
-    if (cardCvv.length < 3) {
-      setError("Please enter a valid 3-digit CVV");
-      return;
-    }
-
-    setVerifyingPayment(true);
-    setError(null);
-
-    try {
-      const cardRef = `CARD_FAM_${cleanCard.slice(-4)}_${Date.now()}`;
-      const verifyRes = await fetch("/api/billing/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: youpiModal.orderId,
-          utr: cardRef,
-          plan: youpiModal.planId,
-        }),
-      });
-
-      const verifyData = await verifyRes.json();
-      if (verifyRes.ok && verifyData.success) {
-        setSuccessMessage(
-          `🎉 Success! Card payment verified. Upgraded to ${youpiModal.planName} plan.`
-        );
-        setYoupiModal(null);
-        router.refresh();
-      } else {
-        throw new Error(verifyData.error || "Card authorization failed.");
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Card processing error");
-    } finally {
-      setVerifyingPayment(false);
-    }
-  };
 
   const handleCopyVpa = () => {
     if (youpiModal?.vpa) {
@@ -613,61 +511,44 @@ export function BillingClient({
               Upgrade to {youpiModal.planName} (₹{youpiModal.amount.toFixed(2)})
             </h3>
 
-            {/* Tab Switcher: UPI vs Card */}
-            <div className="mt-4 flex rounded-xl border border-border bg-muted/40 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setActiveTab("upi")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 font-semibold rounded-lg transition ${
-                  activeTab === "upi"
-                    ? "bg-surface text-text-primary shadow-sm"
-                    : "text-text-secondary hover:text-text-primary"
-                }`}
-              >
-                <QrCode className="h-3.5 w-3.5 text-accent" />
-                <span>UPI & QR</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("card")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 font-semibold rounded-lg transition ${
-                  activeTab === "card"
-                    ? "bg-surface text-text-primary shadow-sm"
-                    : "text-text-secondary hover:text-text-primary"
-                }`}
-              >
-                <CreditCard className="h-3.5 w-3.5 text-accent" />
-                <span>FamPay / Card</span>
-              </button>
+            {/* Order Details & Countdown */}
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
+              <span className="text-text-secondary">Order ID: <span className="font-mono text-text-primary">{youpiModal.orderId}</span></span>
+              <span className="flex items-center gap-1 font-mono font-medium text-accent">
+                <Clock className="h-3.5 w-3.5" />
+                {Math.floor(secondsRemaining / 60)}:{String(secondsRemaining % 60).padStart(2, "0")}
+              </span>
             </div>
 
-            {/* TAB 1: UPI & QR CODE */}
-            {activeTab === "upi" && (
-              <div className="mt-4">
-                <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white p-4 shadow-inner">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={youpiModal.qrCodeUrl}
-                    alt="UPI Payment QR Code"
-                    className="h-52 w-52 object-contain"
-                  />
-                  <div className="mt-2 text-center text-xs font-semibold text-neutral-800">
-                    Scan with FamPay, GPay, PhonePe, Paytm or CRED
-                  </div>
+            {/* UPI & QR Section */}
+            <div className="mt-4">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-white p-4 shadow-inner">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={youpiModal.qrCodeUrl}
+                  alt="UPI Payment QR Code"
+                  className="h-52 w-52 object-contain"
+                />
+                <div className="mt-2 text-center text-xs font-semibold text-neutral-800">
+                  Scan with any UPI app (GPay, PhonePe, Paytm, FamPay, CRED)
                 </div>
+              </div>
 
-                {/* 1-Tap App Deep Link Button */}
+              {/* 1-Tap App Deep Link Button */}
+              {youpiModal.upiUri && (
                 <a
                   href={youpiModal.upiUri}
                   className="my-3 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-bold text-white shadow-md transition hover:bg-accent-hover hover:scale-[1.01]"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  <span>Open in FamPay / UPI App</span>
+                  <span>Open in UPI App</span>
                 </a>
+              )}
 
-                {/* Copy UPI VPA */}
+              {/* Copy UPI VPA */}
+              {youpiModal.vpa && (
                 <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs">
-                  <span className="text-text-secondary">FamPay UPI ID:</span>
+                  <span className="text-text-secondary">UPI ID:</span>
                   <span className="font-mono font-medium text-text-primary">{youpiModal.vpa}</span>
                   <button
                     onClick={handleCopyVpa}
@@ -677,146 +558,26 @@ export function BillingClient({
                     <span>{copiedVpa ? "Copied" : "Copy"}</span>
                   </button>
                 </div>
+              )}
 
-                {/* Instant Auto-Verification Unlock Button */}
-                <button
-                  type="button"
-                  onClick={handleAutoConfirm}
-                  disabled={verifyingPayment}
-                  className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-md transition hover:bg-emerald-500 hover:scale-[1.01] disabled:opacity-50"
-                >
-                  {verifyingPayment ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span>I Have Paid — Unlock Pro Immediately</span>
-                </button>
-
-                {/* Live Real-time Polling Status */}
-                <div className="mb-3 flex items-center justify-center gap-2 text-[11px] text-text-secondary">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-                  </span>
-                  <span>Auto-detecting payment in real time...</span>
-                </div>
-
-                {/* UTR Input & Verification */}
-                <div className="border-t border-border pt-3">
-                  <label className="block text-xs font-medium text-text-primary mb-1.5">
-                    12-digit UTR / UPI Ref ID
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. 429182749102"
-                      value={utrInput}
-                      onChange={(e) => setUtrInput(e.target.value)}
-                      className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary placeholder:text-text-secondary/50 focus:border-accent focus:outline-none"
-                    />
-                    <button
-                      onClick={handleConfirmUtr}
-                      disabled={verifyingPayment}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-50"
-                    >
-                      {verifyingPayment ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Check className="h-3.5 w-3.5" />
-                      )}
-                      <span>Verify</span>
-                    </button>
+              {/* Live Status Tracking Indicator */}
+              <div className="rounded-xl border border-border bg-surface p-3 text-center">
+                {pollStatus === "paid" ? (
+                  <div className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    <Check className="h-4 w-4" />
+                    <span>Payment Received! Activating Plan...</span>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-xs text-text-secondary">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-accent"></span>
+                    </span>
+                    <span>Waiting for payment... Confirms automatically within ~1 min</span>
+                  </div>
+                )}
               </div>
-            )}
-
-            {/* TAB 2: FAMPAY CARD / DEBIT CARD */}
-            {activeTab === "card" && (
-              <div className="mt-4 space-y-3">
-                <div className="rounded-lg border border-accent/20 bg-accent/5 p-3 text-xs text-text-secondary">
-                  💡 <span className="font-medium text-text-primary">No bank link required!</span> Use your FamPay virtual or physical card, RuPay, Visa, or Mastercard.
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-text-secondary mb-1">
-                    Card Number
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={19}
-                    placeholder="4123 4567 8901 2345"
-                    value={cardNumber}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/\D/g, "").slice(0, 16);
-                      setCardNumber(v.replace(/(\d{4})/g, "$1 ").trim());
-                    }}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-medium text-text-secondary mb-1">
-                    Cardholder Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Name as on card / FamPay"
-                    value={cardName}
-                    onChange={(e) => setCardName(e.target.value)}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-medium text-text-secondary mb-1">
-                      Expiry (MM/YY)
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={5}
-                      placeholder="MM/YY"
-                      value={cardExpiry}
-                      onChange={(e) => {
-                        let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                        if (v.length >= 3) v = `${v.slice(0, 2)}/${v.slice(2)}`;
-                        setCardExpiry(v);
-                      }}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none font-mono text-center"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-medium text-text-secondary mb-1">
-                      CVV
-                    </label>
-                    <input
-                      type="password"
-                      maxLength={4}
-                      placeholder="•••"
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-xs text-text-primary focus:border-accent focus:outline-none font-mono text-center"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleConfirmCard}
-                  disabled={verifyingPayment}
-                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-bold text-white shadow-md transition hover:bg-accent-hover disabled:opacity-50"
-                >
-                  {verifyingPayment ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="h-4 w-4" />
-                  )}
-                  <span>Pay ₹{youpiModal.amount.toFixed(2)} via Card</span>
-                </button>
-              </div>
-            )}
+            </div>
           </div>
         </div>
       )}

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
     const { plan } = parseResult.data;
 
-    // Fetch plan price and duration server-side
+    // Fetch plan price and duration server-side from database
     const { data: planRecord, error: planError } = await supabase
       .from("plans")
       .select("id, name, price_inr, duration_days")
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Plan configuration not found" }, { status: 404 });
     }
 
-    const orderId = `YOUPI_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+    const orderId = `XENVRA_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
     const youpi = new YoupiGatewayProvider();
     const session = await youpi.createPaymentSession({
       orderId,
@@ -54,14 +54,22 @@ export async function POST(request: Request) {
       customerEmail: user.email,
     });
 
-    // Record pending payment in database using service role (bypass user RLS)
+    const amountPaise = planRecord.price_inr * 100;
+
+    // Record pending payment in database using service role
+    // Must be service-role only; failures are treated as hard errors
     const adminSupabase = createAdminClient();
     const { error: paymentInsertError } = await adminSupabase.from("payments").insert({
       user_id: user.id,
-      razorpay_order_id: session.orderId,
+      provider: "youpi",
+      provider_order_id: session.orderId,
+      razorpay_order_id: session.orderId, // backward-compat column if needed
       plan,
       amount_inr: planRecord.price_inr,
-      status: "pending",
+      amount_paise: amountPaise,
+      currency: "INR",
+      status: "awaiting_payment",
+      expires_at: session.expiresAt,
       metadata: {
         provider: "youpi",
         vpa: session.vpa,
@@ -72,7 +80,11 @@ export async function POST(request: Request) {
     });
 
     if (paymentInsertError) {
-      console.error("Failed to insert pending payment:", paymentInsertError);
+      console.error("Critical: Failed to insert pending payment order:", paymentInsertError);
+      return NextResponse.json(
+        { error: "Failed to initialize payment order. Please try again." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

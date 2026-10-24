@@ -35,7 +35,7 @@ export default async function PrintResumePage(props: {
     notFound();
   }
 
-  // Check plan entitlement for watermark
+  // Check plan entitlement for watermark & template access
   const { data: entitlement } = await supabase
     .from("entitlements")
     .select("plan, status, current_period_end")
@@ -47,6 +47,12 @@ export default async function PrintResumePage(props: {
     (entitlement.plan === "beginner" || entitlement.plan === "pro") &&
     (!entitlement.current_period_end ||
       new Date(entitlement.current_period_end) > new Date());
+
+  const { getTemplateById } = await import("@/components/templates/registry");
+  const template = getTemplateById(resume.template_id || "modern-1");
+  if (template && !template.free && !isPaid) {
+    redirect(`/dashboard/billing?error=${encodeURIComponent(`The ${template.name} template requires an active Beginner or Pro plan.`)}`);
+  }
 
   const autoPrint = searchParams.autoprint === "true";
 

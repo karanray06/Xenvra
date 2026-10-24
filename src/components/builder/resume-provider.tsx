@@ -176,29 +176,26 @@ export function ResumeProvider({
           currentId = await creatingPromiseRef.current;
         } else {
           creatingPromiseRef.current = (async () => {
-            const { data: newResume } = await retryOperation(
-              async () => {
-                const res = await supabase
-                  .from("resumes")
-                  .insert({
-                    user_id: userId,
-                    title: stateRef.current.title,
-                    template_id: stateRef.current.templateId,
-                    data: stateRef.current.data as unknown as Record<string, unknown>,
-                    version: 1,
-                  })
-                  .select("id, version")
-                  .maybeSingle();
-                if (res.error) throw new Error(res.error.message);
-                return res;
-              }
-            );
+            const res = await retryOperation(async () => {
+              const apiRes = await fetch("/api/resumes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  title: stateRef.current.title,
+                  template_id: stateRef.current.templateId,
+                  data: stateRef.current.data,
+                }),
+              });
+              const data = await apiRes.json();
+              if (!apiRes.ok) throw new Error(data.error || "Failed to create resume");
+              return data;
+            });
 
-            if (!newResume?.id) {
+            if (!res?.id) {
               throw new Error("Failed to create resume: No ID returned");
             }
 
-            return newResume.id;
+            return res.id;
           })();
 
           currentId = await creatingPromiseRef.current;
@@ -221,26 +218,29 @@ export function ResumeProvider({
         }
       }
 
-      // Step 2: Update existing record
+      // Step 2: Update existing record via server API
       if (currentId) {
-        const nextVersion = stateRef.current.version + 1;
         const snapshot = stateRef.current;
 
-        await retryOperation(async () => {
-          const res = await supabase
-            .from("resumes")
-            .update({
+        const updateResult = await retryOperation(async () => {
+          const apiRes = await fetch(`/api/resumes/${currentId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
               title: snapshot.title,
               template_id: snapshot.templateId,
-              data: snapshot.data as unknown as Record<string, unknown>,
-              version: nextVersion,
-            })
-            .eq("id", currentId);
-
-          if (res.error) throw new Error(res.error.message);
-          return res;
+              data: snapshot.data,
+              version: snapshot.version,
+            }),
+          });
+          const data = await apiRes.json();
+          if (!apiRes.ok) {
+            throw new Error(data.error || "Save failed");
+          }
+          return data;
         });
 
+        const nextVersion = updateResult.version ?? (snapshot.version + 1);
         dirtyRef.current = false;
         setState((p) => ({
           ...p,

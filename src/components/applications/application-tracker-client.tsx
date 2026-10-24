@@ -555,7 +555,7 @@ export function ApplicationTrackerClient({
                 <Search className="h-10 w-10 text-accent/40 mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-text-primary">No jobs found</h3>
                 <p className="text-xs text-text-secondary max-w-sm mx-auto mt-1">
-                  Try searching for keywords like "React", "Product Designer", "Engineer", or location "India".
+                  Try searching for keywords like &apos;React&apos;, &apos;Product Designer&apos;, &apos;Engineer&apos;, or location &apos;India&apos;.
                 </p>
               </div>
             )}

@@ -105,24 +105,21 @@ export function CanvaToolsDrawer({
     color: string;
     font: string;
     logo?: string;
-  } | null>(null);
+  } | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const stored = localStorage.getItem("xenvra_brand_kit");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Export & Share
   const [copiedEmbed, setCopiedEmbed] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isExportingPng, setIsExportingPng] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("xenvra_brand_kit");
-      if (stored) {
-        setSavedBrandKit(JSON.parse(stored));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
 
   if (!isOpen) return null;
 

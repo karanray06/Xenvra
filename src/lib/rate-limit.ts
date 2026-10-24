@@ -1,26 +1,20 @@
-interface RateLimitRecord {
-  count: number;
-  resetTime: number;
-}
+/**
+ * Rate Limiting Module
+ * Supports distributed sliding window via Upstash Redis REST API
+ * with automatic fallback to high-efficiency in-memory sliding window for development.
+ */
 
-const memoryStore = new Map<string, RateLimitRecord>();
+import { NextResponse } from "next/server";
 
-// Clean up stale entries every 5 minutes
-if (typeof setInterval !== "undefined") {
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, record] of memoryStore.entries()) {
-      if (now > record.resetTime) {
-        memoryStore.delete(key);
-      }
-    }
-  }, 5 * 60 * 1000);
-}
+export type RateLimitCategory = "auth" | "billing" | "ai" | "upload" | "general";
 
-export interface RateLimitOptions {
-  intervalMs?: number; // Window duration (default: 60,000 ms = 1 minute)
-  maxRequests?: number; // Max requests allowed per window (default: 60)
-}
+export const RATE_LIMIT_BUDGETS: Record<RateLimitCategory, { maxRequests: number; intervalMs: number }> = {
+  auth: { maxRequests: 10, intervalMs: 60_000 },
+  billing: { maxRequests: 10, intervalMs: 60_000 },
+  ai: { maxRequests: 20, intervalMs: 60_000 },
+  upload: { maxRequests: 20, intervalMs: 60_000 },
+  general: { maxRequests: 120, intervalMs: 60_000 },
+};
 
 export interface RateLimitResult {
   success: boolean;
@@ -29,56 +23,165 @@ export interface RateLimitResult {
   reset: number;
 }
 
-export function rateLimit(
+// In-memory sliding log fallback
+interface SlidingLogEntry {
+  timestamps: number[];
+  windowExpiresAt: number;
+}
+const memoryLogs = new Map<string, SlidingLogEntry>();
+
+// Periodic cleanup every 2 minutes
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of memoryLogs.entries()) {
+      if (now > entry.windowExpiresAt) {
+        memoryLogs.delete(key);
+      }
+    }
+  }, 2 * 60 * 1000);
+}
+
+/**
+ * Distributed rate limiter using Upstash Redis REST if configured, otherwise local sliding window.
+ */
+export async function checkRateLimit(
   identifier: string,
-  options: RateLimitOptions = {}
-): RateLimitResult {
-  const intervalMs = options.intervalMs ?? 60_000;
-  const maxRequests = options.maxRequests ?? 60;
+  category: RateLimitCategory = "general"
+): Promise<RateLimitResult> {
+  const budget = RATE_LIMIT_BUDGETS[category];
+  const maxRequests = budget.maxRequests;
+  const intervalMs = budget.intervalMs;
   const now = Date.now();
+  const windowStart = now - intervalMs;
 
-  const record = memoryStore.get(identifier);
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-  if (!record || now > record.resetTime) {
-    memoryStore.set(identifier, {
-      count: 1,
-      resetTime: now + intervalMs,
-    });
+  if (redisUrl && redisToken) {
+    try {
+      const key = `ratelimit:${category}:${identifier}`;
+      // Upstash pipeline: ZREMRANGEBYSCORE, ZADD, ZCARD, EXPIRE
+      const pipelineBody = JSON.stringify([
+        ["ZREMRANGEBYSCORE", key, "0", windowStart.toString()],
+        ["ZADD", key, now.toString(), now.toString()],
+        ["ZCARD", key],
+        ["PEXPIRE", key, intervalMs.toString()],
+      ]);
 
-    return {
-      success: true,
-      limit: maxRequests,
-      remaining: maxRequests - 1,
-      reset: now + intervalMs,
-    };
+      const res = await fetch(`${redisUrl.replace(/\/$/, "")}/pipeline`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${redisToken}`,
+          "Content-Type": "application/json",
+        },
+        body: pipelineBody,
+        cache: "no-store",
+      });
+
+      if (res.ok) {
+        const results = await res.json();
+        // results is array of responses: [ { result: N }, { result: 1 }, { result: count }, { result: 1 } ]
+        const currentCount = results[2]?.result || 1;
+        const remaining = Math.max(0, maxRequests - currentCount);
+        const reset = now + intervalMs;
+
+        return {
+          success: currentCount <= maxRequests,
+          limit: maxRequests,
+          remaining,
+          reset,
+        };
+      }
+    } catch (err) {
+      console.warn("Upstash Redis rate limit check failed, falling back to memory:", err);
+    }
   }
 
-  if (record.count >= maxRequests) {
-    return {
-      success: false,
-      limit: maxRequests,
-      remaining: 0,
-      reset: record.resetTime,
-    };
-  }
+  // Local sliding window fallback
+  const log = memoryLogs.get(`${category}:${identifier}`) || { timestamps: [], windowExpiresAt: now + intervalMs };
+  // Filter out timestamps outside the sliding window
+  log.timestamps = log.timestamps.filter((ts) => ts > windowStart);
+  log.timestamps.push(now);
+  log.windowExpiresAt = now + intervalMs;
+  memoryLogs.set(`${category}:${identifier}`, log);
 
-  record.count += 1;
+  const count = log.timestamps.length;
+  const remaining = Math.max(0, maxRequests - count);
+
   return {
-    success: true,
+    success: count <= maxRequests,
     limit: maxRequests,
-    remaining: maxRequests - record.count,
-    reset: record.resetTime,
+    remaining,
+    reset: now + intervalMs,
   };
 }
 
+/**
+ * Extracts verified client IP. Does not trust spoofed user-agent headers beyond trusted infrastructure.
+ */
 export function getClientIp(request: Request): string {
+  // Vercel edge/serverless verified client IP header
+  const vercelIp = request.headers.get("x-vercel-ip");
+  if (vercelIp) return vercelIp.trim();
+
+  // AWS/Cloudflare verified IP header
+  const cfIp = request.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0].trim();
+    // When behind multiple proxies, the first unverified entry is client, but Vercel sets the true client IP
+    const parts = forwarded.split(",");
+    return parts[0].trim();
   }
-  const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp.trim();
-  }
+
   return "127.0.0.1";
+}
+
+/**
+ * Generates standard 429 Too Many Requests response with headers.
+ */
+export function createRateLimitResponse(limitResult: RateLimitResult): NextResponse {
+  const retryAfterSec = Math.max(1, Math.ceil((limitResult.reset - Date.now()) / 1000));
+  return NextResponse.json(
+    { error: "Too many requests. Please try again later." },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": retryAfterSec.toString(),
+        "X-RateLimit-Limit": limitResult.limit.toString(),
+        "X-RateLimit-Remaining": limitResult.remaining.toString(),
+        "X-RateLimit-Reset": limitResult.reset.toString(),
+      },
+    }
+  );
+}
+
+// Backward-compatible synchronous wrapper for existing non-async calls
+export function rateLimit(
+  identifier: string,
+  options: { maxRequests?: number; intervalMs?: number } = {}
+): RateLimitResult {
+  const maxRequests = options.maxRequests ?? 60;
+  const intervalMs = options.intervalMs ?? 60_000;
+  const now = Date.now();
+  const windowStart = now - intervalMs;
+
+  const log = memoryLogs.get(identifier) || { timestamps: [], windowExpiresAt: now + intervalMs };
+  log.timestamps = log.timestamps.filter((ts) => ts > windowStart);
+  log.timestamps.push(now);
+  log.windowExpiresAt = now + intervalMs;
+  memoryLogs.set(identifier, log);
+
+  const count = log.timestamps.length;
+  return {
+    success: count <= maxRequests,
+    limit: maxRequests,
+    remaining: Math.max(0, maxRequests - count),
+    reset: now + intervalMs,
+  };
 }

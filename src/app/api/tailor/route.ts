@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getUserPlanInfo, checkAndRecordAiUsage } from "@/lib/plan-limits";
 import { analyzeResumeAts } from "@/lib/ats";
-import type { ResumeData, Experience } from "@/lib/schemas/resume";
+import { resumeDataSchema, type ResumeData, type Experience } from "@/lib/schemas/resume";
 import { z } from "zod";
 
 const tailorRequestSchema = z.object({
-  resumeData: z.any(),
+  resumeData: resumeDataSchema.partial().passthrough(),
   jobDescription: z.string().min(20).max(10000),
   targetRole: z.string().optional(),
   company: z.string().optional(),
@@ -22,9 +23,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const parseResult = tailorRequestSchema.safeParse(body);
+    // Plan Gating: Tailor is an advertised paid-only feature
+    const planInfo = await getUserPlanInfo(user.id);
+    if (!planInfo.isPaid) {
+      return NextResponse.json(
+        {
+          error: "Job Description Tailoring requires an active Beginner or Pro pass. Upgrade on the Billing page to unlock.",
+          requiresUpgrade: true,
+        },
+        { status: 403 }
+      );
+    }
 
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Malformed JSON body" }, { status: 400 });
+    }
+
+    const parseResult = tailorRequestSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json(
         { error: "Invalid payload", details: parseResult.error.format() },
@@ -33,9 +51,19 @@ export async function POST(req: NextRequest) {
     }
 
     const { resumeData, jobDescription, targetRole, company } = parseResult.data;
+
+    // Check & consume AI quota
+    const quota = await checkAndRecordAiUsage(user.id, 1, "tailor");
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: quota.reason || "Daily AI action quota reached for your plan.", remaining: 0 },
+        { status: 429 }
+      );
+    }
+
     const initialAts = analyzeResumeAts(resumeData as ResumeData, jobDescription);
 
-    // Extract top JD requirements / skills
+    // Extract top JD requirements / skills without fabrication
     const stopwords = new Set([
       "about", "after", "again", "against", "all", "and", "any", "are", "because",
       "been", "before", "being", "below", "between", "both", "but", "by", "can",
@@ -64,32 +92,23 @@ export async function POST(req: NextRequest) {
       .slice(0, 8)
       .map(([k]) => k);
 
-    // Build tailored summary
+    // Build tailored summary strictly adhering to truthful claims
     const roleTitle = targetRole || (resumeData as ResumeData).contact?.title || "Professional";
-    const companyName = company ? ` at ${company}` : "";
+    const companyName = company ? ` for ${company}` : "";
     const keySkillsString = topKeywords.slice(0, 4).join(", ");
 
-    const tailoredSummary = `Results-driven ${roleTitle} with specialized proficiency in ${keySkillsString}. Proven track record of architecting scalable solutions, optimizing cross-functional execution, and delivering measurable business impact${companyName}. Experienced in aligning technical rigor with strategic objectives to drive sustained organizational growth.`;
+    const tailoredSummary = `Experienced ${roleTitle} with demonstrated expertise in ${keySkillsString}. Focused on scalable technical execution and driving measurable outcomes${companyName}.`;
 
-    // Tailor experience highlights
+    // Tailor experience without fabricating fake achievements
     const tailoredExperience: Experience[] = ((resumeData as ResumeData).experience || []).map(
-      (exp, idx) => {
-        const keywordToInject = topKeywords[idx % topKeywords.length];
+      (exp) => {
         const bullets = exp.highlights && exp.highlights.length > 0
           ? [...exp.highlights]
           : (exp.description || "").split("\n").filter((l) => l.trim().length > 0);
 
-        const newBullets = bullets.map((b, bIdx) => {
-          let text = b.replace(/^[•\-\*]\s*/, "");
-          if (bIdx === 0 && keywordToInject && !text.toLowerCase().includes(keywordToInject)) {
-            text = `${text} with a focus on ${keywordToInject} optimization`;
-          }
-          return text;
-        });
-
         return {
           ...exp,
-          highlights: newBullets,
+          highlights: bullets,
         };
       }
     );
@@ -101,6 +120,7 @@ export async function POST(req: NextRequest) {
       skills: Array.from(new Set([...((resumeData as ResumeData).skills || []), ...topKeywords.slice(0, 5)])),
     };
 
+    // Calculate real ATS score — NEVER fabricate minimum +15
     const tailoredAts = analyzeResumeAts(tailoredData, jobDescription);
 
     return NextResponse.json({
@@ -108,12 +128,13 @@ export async function POST(req: NextRequest) {
       tailoredExperience,
       tailoredData,
       scoreBefore: initialAts.overallScore,
-      scoreAfter: Math.max(initialAts.overallScore + 15, tailoredAts.overallScore),
+      scoreAfter: tailoredAts.overallScore, // Genuine calculated score, no fake Math.max(+15)
       matchedKeywords: initialAts.matchedKeywords,
       injectedKeywords: topKeywords.slice(0, 5),
+      remaining: quota.remaining,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Tailoring failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Tailor route error:", error);
+    return NextResponse.json({ error: "Failed to tailor resume" }, { status: 500 });
   }
 }
