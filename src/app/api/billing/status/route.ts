@@ -26,8 +26,8 @@ export async function GET(request: Request) {
     // Query with user-scoped client to guarantee user only accesses their own payments
     const { data: paymentRecord, error } = await supabase
       .from("payments")
-      .select("id, provider_order_id, razorpay_order_id, plan, status, amount_inr, amount_paise, created_at, paid_at, user_id")
-      .or(`provider_order_id.eq.${orderId},razorpay_order_id.eq.${orderId}`)
+      .select("id, provider_order_id, plan, status, amount_inr, amount_paise, created_at, paid_at, user_id")
+      .or(`provider_order_id.eq.${orderId},id.eq.${orderId}`)
       .eq("user_id", user.id)
       .maybeSingle();
 

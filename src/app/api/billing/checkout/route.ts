@@ -63,7 +63,6 @@ export async function POST(request: Request) {
       user_id: user.id,
       provider: provider.name,
       provider_order_id: session.providerOrderId,
-      razorpay_order_id: session.providerOrderId, // backward-compat column if needed
       plan,
       amount_inr: planRecord.price_inr,
       amount_paise: amountPaise,

@@ -41,7 +41,6 @@ export interface Entitlement {
 export interface Payment {
   id: string;
   provider_order_id?: string | null;
-  razorpay_order_id?: string | null;
   plan: string;
   amount_inr: number;
   status: string;
@@ -227,12 +226,10 @@ export function BillingClient({
         (payload) => {
           const updated = payload.new as {
             provider_order_id?: string;
-            razorpay_order_id?: string;
             status: string;
           };
           if (
-            updated.provider_order_id === queryId ||
-            updated.razorpay_order_id === queryId
+            updated.provider_order_id === queryId
           ) {
             if (updated.status === "paid" || updated.status === "completed") {
               setTrackingState("paid");
@@ -626,7 +623,7 @@ export function BillingClient({
                           </span>
                         </td>
                         <td className="px-5 py-3.5 font-mono text-[10px] text-[#5E534D]">
-                          {p.provider_order_id || p.razorpay_order_id || "N/A"}
+                          {p.provider_order_id || p.id || "N/A"}
                         </td>
                         <td className="px-5 py-3.5 text-right">
                           <button
@@ -899,7 +896,7 @@ export function BillingClient({
               </div>
               <div className="flex justify-between py-1 border-b border-[#C9CCD1]/50">
                 <span className="text-[#8A8F98]">Order Ref:</span>
-                <span className="font-mono text-[#241915]">{receiptPayment.provider_order_id || receiptPayment.razorpay_order_id || "N/A"}</span>
+                <span className="font-mono text-[#241915]">{receiptPayment.provider_order_id || receiptPayment.id || "N/A"}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-[#C9CCD1]/50">
                 <span className="text-[#8A8F98]">Plan Pass:</span>
