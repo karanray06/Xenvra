@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { YoupiGatewayProvider } from "@/lib/payments/youpi";
+import { getPaymentProvider } from "@/lib/payments/provider";
 import { z } from "zod";
 
 const checkoutSchema = z.object({
@@ -45,25 +45,25 @@ export async function POST(request: Request) {
     }
 
     const orderId = `XENVRA_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-    const youpi = new YoupiGatewayProvider();
-    const session = await youpi.createPaymentSession({
+    const amountPaise = planRecord.price_inr * 100;
+    const provider = getPaymentProvider();
+
+    const session = await provider.createOrder({
       orderId,
-      amount: planRecord.price_inr,
+      amountPaise,
       plan,
       userId: user.id,
       customerEmail: user.email,
     });
-
-    const amountPaise = planRecord.price_inr * 100;
 
     // Record pending payment in database using service role
     // Must be service-role only; failures are treated as hard errors
     const adminSupabase = createAdminClient();
     const { error: paymentInsertError } = await adminSupabase.from("payments").insert({
       user_id: user.id,
-      provider: "youpi",
-      provider_order_id: session.orderId,
-      razorpay_order_id: session.orderId, // backward-compat column if needed
+      provider: provider.name,
+      provider_order_id: session.providerOrderId,
+      razorpay_order_id: session.providerOrderId, // backward-compat column if needed
       plan,
       amount_inr: planRecord.price_inr,
       amount_paise: amountPaise,
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       status: "awaiting_payment",
       expires_at: session.expiresAt,
       metadata: {
-        provider: "youpi",
+        provider: provider.name,
         vpa: session.vpa,
         upiUri: session.upiUri,
         userEmail: user.email,
@@ -89,11 +89,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       orderId: session.orderId,
+      provider: provider.name,
+      providerOrderId: session.providerOrderId,
       upiUri: session.upiUri,
       qrCodeUrl: session.qrCodeUrl,
       vpa: session.vpa,
       merchantName: session.merchantName,
-      amount: session.amount,
+      amount: planRecord.price_inr,
+      amountPaise,
+      keyId: session.keyId,
       expiresAt: session.expiresAt,
       plan: planRecord,
     });

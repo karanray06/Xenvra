@@ -1,10 +1,17 @@
 /**
  * YouPI Payment Gateway Provider
- * Self-Hosted / Sovereign UPI Payment Gateway
+ * Self-Hosted / Sovereign UPI Payment Gateway conforming to PaymentProvider interface.
  */
 
 import crypto from "crypto";
 import QRCode from "qrcode";
+import type {
+  PaymentProvider,
+  CreateOrderOptions,
+  PaymentOrder,
+  WebhookVerificationResult,
+  OrderStatusResult,
+} from "./provider";
 
 export interface YoupiPaymentSessionOptions {
   orderId: string;
@@ -28,7 +35,8 @@ export interface YoupiPaymentSession {
   expiresAt: string;
 }
 
-export class YoupiGatewayProvider {
+export class YoupiGatewayProvider implements PaymentProvider {
+  name = "youpi" as const;
   private apiUrl: string;
   private merchantId: string;
   private webhookSecret: string;
@@ -42,9 +50,40 @@ export class YoupiGatewayProvider {
     this.vpa = process.env.NEXT_PUBLIC_YOUPI_UPI_VPA || "xenvra@upi";
     this.merchantName = process.env.NEXT_PUBLIC_YOUPI_MERCHANT_NAME || "Xenvra";
 
-    if (process.env.NODE_ENV === "production" && !this.webhookSecret && process.env.PAYMENT_PROVIDER === "youpi") {
+    if (
+      process.env.NODE_ENV === "production" &&
+      !this.webhookSecret &&
+      process.env.PAYMENT_PROVIDER === "youpi"
+    ) {
       throw new Error("YOUPI_WEBHOOK_SECRET must be configured in production when YouPI is enabled.");
     }
+  }
+
+  async createOrder(options: CreateOrderOptions): Promise<PaymentOrder> {
+    const amountInr = options.amountPaise / 100;
+    const session = await this.createPaymentSession({
+      orderId: options.orderId,
+      amount: amountInr,
+      currency: options.currency || "INR",
+      plan: options.plan,
+      userId: options.userId,
+      customerEmail: options.customerEmail,
+      customerName: options.customerName,
+    });
+
+    return {
+      orderId: session.orderId,
+      provider: "youpi",
+      providerOrderId: session.orderId,
+      amountPaise: options.amountPaise,
+      currency: session.currency,
+      plan: session.plan,
+      upiUri: session.upiUri,
+      qrCodeUrl: session.qrCodeUrl,
+      vpa: session.vpa,
+      merchantName: session.merchantName,
+      expiresAt: session.expiresAt,
+    };
   }
 
   /**
@@ -66,13 +105,12 @@ export class YoupiGatewayProvider {
         width: 280,
         margin: 2,
         color: {
-          dark: "#000000",
+          dark: "#241915",
           light: "#FFFFFF",
         },
       });
     } catch (err) {
       console.error("Local QR code generation failed:", err);
-      // Fallback empty data URL
       qrCodeUrl = "";
     }
 
@@ -98,24 +136,20 @@ export class YoupiGatewayProvider {
 
         if (res.ok) {
           const youpiData = await res.json();
-          let remoteQr = youpiData.qrCodeUrl;
-          if (youpiData.upiUri && (!remoteQr || remoteQr.includes("api.qrserver.com"))) {
-            remoteQr = await QRCode.toDataURL(youpiData.upiUri, { width: 280, margin: 2 });
-          }
           return {
-            orderId,
+            orderId: youpiData.orderId || orderId,
             amount,
             currency,
             plan,
             upiUri: youpiData.upiUri || upiUri,
-            qrCodeUrl: remoteQr || qrCodeUrl,
+            qrCodeUrl: youpiData.qrCodeUrl || qrCodeUrl,
             vpa: youpiData.vpa || this.vpa,
             merchantName: this.merchantName,
-            expiresAt,
+            expiresAt: youpiData.expiresAt || expiresAt,
           };
         }
       } catch (err) {
-        console.warn("YouPI remote instance unreachable, using native UPI engine:", err);
+        console.warn("External YouPI API unreachable, falling back to sovereign direct session:", err);
       }
     }
 
@@ -132,36 +166,115 @@ export class YoupiGatewayProvider {
     };
   }
 
-  /**
-   * Verifies incoming webhook signature safely (prevents timingSafeEqual length mismatch crash).
-   */
-  verifyWebhookSignature(payload: string, signature: string | null): boolean {
-    if (!signature || !this.webhookSecret) return false;
-    
+  async verifyWebhook(rawBody: string, headers: Headers): Promise<WebhookVerificationResult> {
+    const signature =
+      headers.get("x-gateway-signature") ||
+      headers.get("x-youpi-signature") ||
+      headers.get("x-signature");
+
+    if (!signature) {
+      return {
+        isValid: false,
+        status: "ignored",
+        error: "Missing required signature header",
+      };
+    }
+
+    if (!this.webhookSecret) {
+      return {
+        isValid: false,
+        status: "ignored",
+        error: "YOUPI_WEBHOOK_SECRET not configured on server",
+      };
+    }
+
+    // Verify timestamp to prevent replay attacks
+    const timestampHeader =
+      headers.get("x-gateway-timestamp") || headers.get("x-webhook-timestamp");
+    if (timestampHeader) {
+      const reqTime = parseInt(timestampHeader, 10);
+      const currentTime = Date.now();
+      if (
+        isNaN(reqTime) ||
+        currentTime - reqTime > 5 * 60 * 1000 ||
+        reqTime - currentTime > 60 * 1000
+      ) {
+        return {
+          isValid: false,
+          status: "ignored",
+          error: "Timestamp out of allowed window",
+        };
+      }
+    }
+
+    // Verify HMAC
     try {
       const expected = crypto
         .createHmac("sha256", this.webhookSecret)
-        .update(payload)
+        .update(rawBody)
         .digest("hex");
+      const sigBuf = Buffer.from(signature, "utf8");
+      const expBuf = Buffer.from(expected, "utf8");
 
-      const sigBuffer = Buffer.from(signature, "utf8");
-      const expectedBuffer = Buffer.from(expected, "utf8");
-
-      if (sigBuffer.length !== expectedBuffer.length) {
-        return false;
+      if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+        return {
+          isValid: false,
+          status: "ignored",
+          error: "Invalid HMAC signature",
+        };
       }
-
-      return crypto.timingSafeEqual(sigBuffer, expectedBuffer);
     } catch {
-      return false;
+      return {
+        isValid: false,
+        status: "ignored",
+        error: "Signature evaluation error",
+      };
     }
+
+    // Parse payload
+    let payload: Record<string, unknown>;
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return {
+        isValid: false,
+        status: "ignored",
+        error: "Malformed JSON",
+      };
+    }
+
+    const event = String(payload.event || payload.type || "");
+    const orderId = String(payload.orderId || payload.order_id || "");
+    const paymentId = String(payload.paymentId || payload.payment_id || `pay_${Date.now()}`);
+    const amountInr = Number(payload.amount || payload.amount_inr || 0);
+    const amountPaise = Math.round(amountInr * 100);
+
+    if (
+      event === "payment.success" ||
+      event === "payment.captured" ||
+      event === "order.paid" ||
+      event === "payment_captured"
+    ) {
+      return {
+        isValid: true,
+        orderId,
+        paymentId,
+        amountPaise,
+        status: "paid",
+      };
+    }
+
+    return {
+      isValid: true,
+      status: "ignored",
+    };
   }
 
-  /**
-   * Validates UTR / Bank Reference Number format (12-digit Indian banking standard).
-   */
-  validateUtr(utr: string): boolean {
-    const cleanUtr = utr.trim().replace(/\s+/g, "");
-    return /^[a-zA-Z0-9]{8,22}$/.test(cleanUtr);
+  async fetchOrderStatus(orderId: string): Promise<OrderStatusResult> {
+    return {
+      orderId,
+      status: "awaiting_payment",
+      paid: false,
+    };
   }
 }
