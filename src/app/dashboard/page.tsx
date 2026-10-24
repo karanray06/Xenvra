@@ -1,17 +1,22 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserContext } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { FileText, Plus, Clock, LayoutGrid } from "lucide-react";
+import { FileText, Plus, Clock, LayoutGrid, Palette } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard — Xenvra Studio",
+  description: "Design resumes, presentations, cover letters, and career assets.",
+};
 
 export default async function DashboardPage() {
+  const context = await getUserContext();
+  if (!context?.user) redirect("/login");
+
+  const { user, profile } = context;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-
-  // Fetch user's resumes
+  // Fetch user's designs & resumes (Phase B performance: indexed query)
   const { data: resumes } = await supabase
     .from("resumes")
     .select("id, title, template_id, updated_at")
@@ -19,6 +24,7 @@ export default async function DashboardPage() {
     .order("updated_at", { ascending: false });
 
   const userName =
+    profile?.full_name ||
     user.user_metadata?.full_name ||
     user.email?.split("@")[0] ||
     "there";
@@ -31,23 +37,23 @@ export default async function DashboardPage() {
           Welcome back, {userName}
         </h1>
         <p className="mt-1 text-text-secondary">
-          Create, edit, and manage your resumes.
+          Design resumes, presentations, cover letters, and career documents — beautifully.
         </p>
       </div>
 
       {/* Quick Actions */}
       <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Link
-          href="/dashboard/builder"
+          href="/dashboard/studio"
           className="group flex items-center gap-4 rounded-xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-accent/30 hover:shadow-md"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-accent transition-colors group-hover:bg-brand-100">
-            <Plus className="h-6 w-6" />
+            <Palette className="h-6 w-6" />
           </div>
           <div>
-            <p className="font-semibold text-text-primary">New Resume</p>
+            <p className="font-semibold text-text-primary">Open Studio</p>
             <p className="text-sm text-text-secondary">
-              Start from scratch
+              Start new design or resume
             </p>
           </div>
         </Link>
@@ -61,7 +67,7 @@ export default async function DashboardPage() {
           <div>
             <p className="font-semibold text-text-primary">Browse Templates</p>
             <p className="text-sm text-text-secondary">
-              Pick a design
+              Ready-made career & campus decks
             </p>
           </div>
         </Link>
@@ -71,9 +77,9 @@ export default async function DashboardPage() {
           </div>
           <div>
             <p className="font-semibold text-text-primary">
-              {resumes?.length ?? 0} Resume{(resumes?.length ?? 0) !== 1 ? "s" : ""}
+              {resumes?.length ?? 0} Project{(resumes?.length ?? 0) !== 1 ? "s" : ""}
             </p>
-            <p className="text-sm text-text-secondary">Total created</p>
+            <p className="text-sm text-text-secondary">Active documents</p>
           </div>
         </div>
       </div>
@@ -81,27 +87,26 @@ export default async function DashboardPage() {
       {/* Resumes List */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-text-primary">
-          Your Resumes
+          Your Documents & Resumes
         </h2>
 
         {!resumes || resumes.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-surface-secondary py-16 text-center">
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50">
-              <FileText className="h-8 w-8 text-accent" />
+              <Palette className="h-8 w-8 text-accent" />
             </div>
             <h3 className="mb-2 text-lg font-semibold text-text-primary">
-              No resumes yet
+              No documents yet
             </h3>
             <p className="mb-6 max-w-sm text-sm text-text-secondary">
-              Create your first professional resume in minutes with our
-              AI-powered builder.
+              Create your first professional resume, pitch deck, or career asset in minutes with Xenvra Studio.
             </p>
             <Link
-              href="/dashboard/builder"
+              href="/dashboard/studio"
               className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover"
             >
               <Plus className="h-4 w-4" />
-              Create Resume
+              Create Document
             </Link>
           </div>
         ) : (
@@ -109,7 +114,7 @@ export default async function DashboardPage() {
             {resumes.map((resume) => (
               <Link
                 key={resume.id}
-                href={`/dashboard/builder?id=${resume.id}`}
+                href={`/dashboard/studio?id=${resume.id}`}
                 className="group rounded-xl border border-border bg-surface p-5 shadow-sm transition-all hover:border-accent/30 hover:shadow-md"
               >
                 <div className="mb-4 flex h-32 items-center justify-center rounded-lg bg-surface-tertiary">

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import { getAppBaseUrl } from "@/lib/env";
+import { NavigationProgressBar } from "@/components/navigation/progress-bar";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -18,34 +20,38 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getAppBaseUrl()),
-  title: "Xenvra — AI-Powered Resume Builder",
+  title: "Xenvra Studio — Design Resumes, Decks & More — In Minutes",
   description:
-    "Build professional, ATS-friendly resumes with AI assistance. Choose from multiple templates, get real-time feedback, and export to PDF.",
+    "Your career, beautifully designed. Ready-made templates for resumes, pitch decks, college vivas, and LinkedIn banners with ATS scoring and AI superpowers.",
   keywords: [
+    "design studio",
     "resume builder",
-    "AI resume",
-    "ATS-friendly resume",
-    "professional resume",
-    "resume templates",
+    "presentation decks",
+    "pitch deck templates",
+    "career design",
+    "ATS resume",
+    "college viva presentation",
+    "LinkedIn banner generator",
   ],
   openGraph: {
-    title: "Xenvra — AI-Powered Resume Builder",
+    title: "Xenvra Studio — Design Resumes, Decks & More",
     description:
-      "Build professional, ATS-friendly resumes with AI assistance. Resumes, refined.",
+      "Your career, beautifully designed. Design resumes, presentation decks, project vivas, and career assets in minutes.",
     type: "website",
     images: [
       {
         url: "/api/og",
         width: 1200,
         height: 630,
-        alt: "Xenvra — Resumes, refined.",
+        alt: "Xenvra Studio — Your career, beautifully designed.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Xenvra — AI-Powered Resume Builder",
-    description: "Resumes, refined. Build ATS-friendly resumes in minutes.",
+    title: "Xenvra Studio — Design Resumes, Decks & More",
+    description:
+      "Your career, beautifully designed. Design resumes, presentation decks, project vivas, and career assets in minutes.",
     images: ["/api/og"],
   },
 };
@@ -57,6 +63,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${plusJakarta.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
       <body className="min-h-full flex flex-col bg-surface text-text-primary selection:bg-lav-200 selection:text-text-primary">
+        <Suspense fallback={null}>
+          <NavigationProgressBar />
+        </Suspense>
         {children}
       </body>
     </html>

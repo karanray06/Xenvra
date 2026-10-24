@@ -895,3 +895,16 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_public_profile(TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_public_profile(TEXT) TO anon, authenticated, service_role;
+
+-- ============================================================
+-- Phase B: Performance Optimization Indexes
+-- Eliminates query latency for eq(user_id) + order by queries
+-- ============================================================
+CREATE INDEX IF NOT EXISTS idx_resumes_user_updated ON public.resumes(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_job_applications_user_updated ON public.job_applications(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cover_letters_user_created ON public.cover_letters(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payments_user_created ON public.payments(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_public_profiles_user ON public.public_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_profile_views_profile ON public.profile_views(public_profile_id);
+CREATE INDEX IF NOT EXISTS idx_resume_versions_resume_created ON public.resume_versions(resume_id, created_at DESC);
+

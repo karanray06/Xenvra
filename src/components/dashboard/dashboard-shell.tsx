@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
-  FileText,
   Grid,
   Settings,
   LogOut,
@@ -22,11 +20,14 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
+import Link, { useLinkStatus } from "next/link";
+
 interface DashboardUser {
   id: string;
   email: string;
   fullName: string;
   avatarUrl: string | null;
+  plan?: string;
 }
 
 interface DashboardShellProps {
@@ -35,16 +36,58 @@ interface DashboardShellProps {
 }
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/builder", label: "Builder", icon: FileText },
-  { href: "/dashboard/studio", label: "Vector Studio", icon: Palette },
-  { href: "/dashboard/applications", label: "Tracker", icon: Briefcase },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard/studio", label: "Studio", icon: Palette },
+  { href: "/dashboard/templates", label: "Templates", icon: Grid },
+  { href: "/dashboard/jobs", label: "Jobs", icon: Briefcase },
   { href: "/dashboard/cover-letters", label: "Cover Letters", icon: Mail },
   { href: "/dashboard/tailor", label: "JD Tailor", icon: Target },
-  { href: "/dashboard/templates", label: "Templates", icon: Grid },
-  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+function NavLinkItem({
+  href,
+  label,
+  icon: Icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`group relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
+        active
+          ? "bg-brand-50 text-accent font-bold"
+          : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
+      }`}
+    >
+      <NavLinkContent label={label} icon={Icon} />
+    </Link>
+  );
+}
+
+function NavLinkContent({
+  label,
+  icon: Icon,
+}: {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}) {
+  const { pending } = useLinkStatus();
+  return (
+    <>
+      <Icon className={`h-4 w-4 transition-transform ${pending ? "animate-spin text-accent" : "group-hover:scale-105"}`} />
+      <span>{label}</span>
+      {pending && (
+        <span className="h-1.5 w-1.5 rounded-full bg-accent animate-ping" />
+      )}
+    </>
+  );
+}
 
 export function DashboardShell({ user, children }: DashboardShellProps) {
   const pathname = usePathname();
@@ -132,21 +175,16 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
 
           {/* Nav Links */}
           <nav className="hidden items-center gap-1 md:flex">
-            {navItems.map(({ href, label, icon: Icon }) => {
+            {navItems.map(({ href, label, icon }) => {
               const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
               return (
-                <Link
+                <NavLinkItem
                   key={href}
                   href={href}
-                  className={`flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors ${
-                    active
-                      ? "bg-brand-50 text-accent"
-                      : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </Link>
+                  label={label}
+                  icon={icon}
+                  active={active}
+                />
               );
             })}
           </nav>
@@ -198,12 +236,24 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
                     Account Settings
                   </Link>
                   <Link
-                    href="/dashboard/billing"
+                    href="/dashboard/settings#billing"
                     onClick={() => setUserMenuOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-tertiary hover:text-text-primary"
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-surface-tertiary hover:text-text-primary"
                   >
-                    <CreditCard className="h-4 w-4" />
-                    Billing & Plans
+                    <span className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Plan & Billing
+                    </span>
+                    {user.plan === "pro" ? (
+                      <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-accent uppercase">
+                        PRO
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 rounded bg-accent px-1.5 py-0.5 text-[10px] font-bold text-white uppercase hover:bg-accent/90 shadow-xs">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Upgrade
+                      </span>
+                    )}
                   </Link>
                 </div>
 

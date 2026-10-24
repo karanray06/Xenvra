@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-interface Plan {
+export interface Plan {
   id: string;
   name: string;
   price_inr: number;
@@ -26,14 +26,14 @@ interface Plan {
   features: string[];
 }
 
-interface Entitlement {
-  id: string;
+export interface Entitlement {
+  id?: string;
   plan: string;
   status: string;
   current_period_end: string | null;
 }
 
-interface Payment {
+export interface Payment {
   id: string;
   razorpay_order_id: string | null;
   plan: string;

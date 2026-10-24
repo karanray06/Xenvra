@@ -1,14 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserContext } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TailorClient } from "@/components/tailor/tailor-client";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "JD Tailor — Xenvra Studio",
+  description: "Tailor your resume against any job description with keyword alignment.",
+};
 
 export default async function TailorPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const context = await getUserContext();
+  if (!context?.user) redirect("/login");
 
-  if (!user) redirect("/login");
+  const { user } = context;
+  const supabase = await createClient();
 
   const { data: resumes } = await supabase
     .from("resumes")

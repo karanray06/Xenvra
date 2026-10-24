@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Sparkles,
   Shield,
   Download,
   PenTool,
@@ -98,17 +97,17 @@ function Hero() {
 
         {/* Headline */}
         <h1 className="mx-auto max-w-4xl text-4xl font-extrabold leading-tight tracking-tight text-text-primary sm:text-5xl md:text-6xl lg:text-7xl">
-          Build a Professional Resume{" "}
+          Design Resumes, Decks & More —{" "}
           <span className="bg-gradient-to-r from-accent to-brand-700 bg-clip-text text-transparent">
-            That Gets Results
+            In Minutes
           </span>
         </h1>
 
         {/* Subheading */}
         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-secondary sm:text-xl">
-          Create polished, ATS-friendly resumes in minutes. Choose from
-          professionally designed templates, get AI writing assistance, and
-          export to PDF.
+          Your career, beautifully designed. Ready-made templates for resumes,
+          pitch decks, college project vivas, and LinkedIn banners — where people
+          simply add their photos and text.
         </p>
 
         {/* CTAs */}
@@ -117,20 +116,20 @@ function Hero() {
             href="/login"
             className="inline-flex items-center gap-2 rounded-xl bg-accent px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-accent/25 transition-all hover:bg-accent-hover hover:shadow-xl hover:shadow-accent/30"
           >
-            Create My Resume
+            Open Xenvra Studio
             <ArrowRight className="h-5 w-5" />
           </Link>
           <a
             href="#features"
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-7 py-3.5 text-base font-semibold text-text-primary shadow-sm transition-all hover:border-border-strong hover:shadow-md"
           >
-            Learn More
+            Explore Features
           </a>
         </div>
 
-        {/* Social Proof — honest version */}
+        {/* Social Proof */}
         <p className="mt-12 text-sm text-text-tertiary">
-          Free to start · No credit card required · Export to PDF instantly
+          Free to start · No credit card required · Export to PDF, SVG, PPTX & PNG
         </p>
       </div>
     </section>
@@ -549,6 +548,7 @@ export default function LandingPage() {
       <Navbar />
       <main>
         <Hero />
+        <Features />
         <StartInspiredSection />
         <CanvaFeaturesSection />
         <HowItWorks />

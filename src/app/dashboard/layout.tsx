@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getUserContext } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 
@@ -7,21 +7,13 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const context = await getUserContext();
 
-  if (!user) {
+  if (!context?.user) {
     redirect("/login");
   }
 
-  // Fetch profile
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .maybeSingle();
+  const { user, profile, plan } = context;
 
   return (
     <DashboardShell
@@ -35,6 +27,7 @@ export default async function DashboardLayout({
           "User",
         avatarUrl:
           profile?.avatar_url || user.user_metadata?.avatar_url || null,
+        plan,
       }}
     >
       {children}

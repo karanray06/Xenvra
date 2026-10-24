@@ -1,64 +1,68 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUserContext } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   Palette,
-  Sparkles,
   Layers,
-  Layout,
   Plus,
   ArrowRight,
   ShieldCheck,
   FileCode,
   Eye,
   CheckCircle2,
+  Presentation,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 
 export const metadata = {
-  title: "Vector Studio — Xenvra",
-  description: "Penpot-style vector design artboard for custom visual resumes and assets.",
+  title: "Xenvra Studio — Design Resumes, Decks & Career Assets",
+  description: "Next-gen design studio for career and campus work: resumes, presentation decks, LinkedIn banners, and visual assets.",
 };
 
 const STUDIO_PRESETS = [
   {
-    id: "preset-blank",
-    title: "Blank A4 Vector Artboard",
-    desc: "Clean 794x1123 canvas with millimeter grid snapping, text blocks, and vector shapes.",
-    badge: "Freeform",
+    id: "preset-pitch-deck",
+    title: "Startup Pitch Deck (16:9)",
+    desc: "1920x1080 10-slide anatomy: Problem, Solution, Market, Traction, Team & Roadmap.",
+    badge: "Presentation",
+    icon: Presentation,
+    bg: "bg-[#E6EEF4]/60",
+  },
+  {
+    id: "preset-resume-ats",
+    title: "ATS-Safe Executive Resume",
+    desc: "Clean A4 format with verified vector text embedding, typographic hierarchy, and photo frame.",
+    badge: "Resume",
+    icon: FileText,
+    bg: "bg-[#DCD3F2]/30",
+  },
+  {
+    id: "preset-college-viva",
+    title: "College Project / Viva Deck",
+    desc: "Structured project defense slides with architecture diagrams, results, and team credits.",
+    badge: "Campus",
+    icon: Presentation,
+    bg: "bg-[#C9CCD1]/30",
+  },
+  {
+    id: "preset-linkedin-banner",
+    title: "LinkedIn Profile Banner",
+    desc: "1584x396 pixel-perfect canvas tailored to professional branding and contact callouts.",
+    badge: "Social",
+    icon: CreditCard,
     bg: "bg-surface-secondary",
-  },
-  {
-    id: "preset-executive",
-    title: "Executive Slate Artboard",
-    desc: "Navy/Charcoal geometry with pre-aligned header band and typographic hierarchy.",
-    badge: "Executive",
-    bg: "bg-brand-50/40",
-  },
-  {
-    id: "preset-split",
-    title: "Modern Dual Column",
-    desc: "Divided vector layout with accent sidebar cards and progress indicator nodes.",
-    badge: "Modern",
-    bg: "bg-emerald-50/30",
-  },
-  {
-    id: "preset-creative",
-    title: "Creative Grid Portfolio",
-    desc: "High-contrast layout designed for designers and art directors with project spotlights.",
-    badge: "Creative",
-    bg: "bg-purple-50/30",
   },
 ];
 
 export default async function StudioPage() {
+  const context = await getUserContext();
+  if (!context?.user) redirect("/login");
+
+  const { user } = context;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-
-  // Fetch recent resumes with vector design_json
+  // Fetch recent documents & designs
   const { data: resumes } = await supabase
     .from("resumes")
     .select("id, title, template_id, design_json, updated_at")
@@ -66,77 +70,79 @@ export default async function StudioPage() {
     .order("updated_at", { ascending: false })
     .limit(8);
 
-  const designResumes = (resumes || []).filter(
-    (r) => r.design_json && typeof r.design_json === "object"
-  );
-
   return (
-    <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-fade-in">
       {/* Top Banner */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-bold text-accent">
-              <Palette className="h-3 w-3" /> Penpot-Grade Vector Engine
+              <Palette className="h-3 w-3" /> Xenvra Studio Flagship
             </span>
           </div>
           <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">
-            Vector Design Studio
+            Xenvra Studio
           </h1>
           <p className="mt-1 text-xs text-text-secondary">
-            Drag-and-drop vector artboard for unrestricted visual resumes, badges, dividers, and graphics.
+            Design resumes, presentation decks, project vivas, and career assets — in minutes.
           </p>
         </div>
 
         <Link
-          href="/dashboard/builder"
+          href="/studio"
           className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-accent-hover transition-colors"
         >
           <Plus className="h-4 w-4" />
-          <span>Launch Vector Studio</span>
+          <span>New Studio Canvas</span>
         </Link>
       </div>
 
-      {/* Preset Templates */}
+      {/* Preset Document Formats */}
       <div className="space-y-4">
         <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
           <Layers className="h-4 w-4 text-accent" />
-          Studio Artboard Presets
+          Ready-Made Presets & Formats
         </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {STUDIO_PRESETS.map((p) => (
-            <Link
-              key={p.id}
-              href="/dashboard/builder"
-              className={`group flex flex-col justify-between rounded-2xl border border-border ${p.bg} p-5 transition-all hover:border-accent hover:shadow-md`}
-            >
-              <div>
-                <span className="rounded-md bg-white border border-border px-2 py-0.5 text-[10px] font-bold text-text-primary uppercase">
-                  {p.badge}
-                </span>
-                <h3 className="text-sm font-bold text-text-primary mt-3 group-hover:text-accent transition-colors">
-                  {p.title}
-                </h3>
-                <p className="text-xs text-text-secondary mt-1 leading-relaxed">
-                  {p.desc}
-                </p>
-              </div>
+          {STUDIO_PRESETS.map((p) => {
+            const Icon = p.icon;
+            return (
+              <Link
+                key={p.id}
+                href="/studio"
+                className={`group flex flex-col justify-between rounded-2xl border border-border ${p.bg} p-5 transition-all hover:border-accent hover:shadow-md`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-md bg-surface border border-border px-2 py-0.5 text-[10px] font-bold text-text-primary uppercase">
+                      {p.badge}
+                    </span>
+                    <Icon className="h-4 w-4 text-text-tertiary group-hover:text-accent transition-colors" />
+                  </div>
+                  <h3 className="text-sm font-bold text-text-primary mt-3 group-hover:text-accent transition-colors">
+                    {p.title}
+                  </h3>
+                  <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                    {p.desc}
+                  </p>
+                </div>
 
-              <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-accent">
-                <span>Open Canvas</span>
-                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
-          ))}
+                <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between text-xs font-semibold text-accent">
+                  <span>Open Studio</span>
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 
-      {/* Your Vector Designs */}
+      {/* Your Saved Documents */}
       <div className="space-y-4 pt-4">
         <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
           <FileCode className="h-4 w-4 text-accent" />
-          Saved Vector Artboards ({resumes?.length || 0})
+          Saved Studio Documents ({resumes?.length || 0})
         </h2>
 
         {resumes && resumes.length > 0 ? (
@@ -149,7 +155,7 @@ export default async function StudioPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-mono text-text-tertiary">
-                      {new Date(r.updated_at).toLocaleDateString("en-US", {
+                      {new Date(r.updated_at).toLocaleDateString("en-IN", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
@@ -157,11 +163,11 @@ export default async function StudioPage() {
                     </span>
                     {r.design_json ? (
                       <span className="rounded-full bg-success-light px-2 py-0.5 text-[10px] font-bold text-success flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Vector Artboard
+                        <CheckCircle2 className="h-3 w-3" /> Studio Doc
                       </span>
                     ) : (
                       <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
-                        Standard Doc
+                        Document
                       </span>
                     )}
                   </div>
@@ -172,7 +178,7 @@ export default async function StudioPage() {
 
                 <div className="mt-5 pt-3 border-t border-border flex items-center justify-between">
                   <Link
-                    href={`/dashboard/builder?id=${r.id}`}
+                    href={`/studio?id=${r.id}`}
                     className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
                   >
                     <span>Open in Studio →</span>
@@ -193,7 +199,7 @@ export default async function StudioPage() {
             <Palette className="h-10 w-10 text-accent/40 mx-auto mb-3" />
             <h3 className="text-sm font-bold text-text-primary">No designs yet</h3>
             <p className="text-xs text-text-secondary max-w-sm mx-auto mt-1">
-              Start with any of the presets above or convert an existing resume into a freeform vector canvas.
+              Start with any of the presets above or design a custom visual resume or pitch deck.
             </p>
           </div>
         )}
@@ -206,7 +212,7 @@ export default async function StudioPage() {
           <div>
             <h4 className="text-xs font-bold text-text-primary">DOMPurify SVG Sanitization</h4>
             <p className="text-[11px] text-text-secondary mt-0.5">
-              All imported graphics are stripped of scripts, external references, and malicious handlers before rendering.
+              All imported graphics and SVGs are stripped of scripts, external references, and malicious handlers before rendering.
             </p>
           </div>
         </div>
@@ -214,19 +220,19 @@ export default async function StudioPage() {
         <div className="flex items-start gap-3">
           <Layers className="h-5 w-5 text-accent shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-xs font-bold text-text-primary">Penpot Layer Hierarchy</h4>
+            <h4 className="text-xs font-bold text-text-primary">Layer Hierarchy & Guides</h4>
             <p className="text-[11px] text-text-secondary mt-0.5">
-              Reorder, lock, hide, group, and align text and vector nodes with millimeter precision.
+              Reorder, lock, hide, group, and snap text and graphic nodes with smart magnetic snapping and alignment guides.
             </p>
           </div>
         </div>
 
         <div className="flex items-start gap-3">
-          <FileCode className="h-5 w-5 text-brand-600 shrink-0 mt-0.5" />
+          <FileCode className="h-5 w-5 text-accent shrink-0 mt-0.5" />
           <div>
-            <h4 className="text-xs font-bold text-text-primary">Vector Export Suite</h4>
+            <h4 className="text-xs font-bold text-text-primary">Multi-Format Vector Export</h4>
             <p className="text-[11px] text-text-secondary mt-0.5">
-              Download clean native SVG, high-resolution 2x PNG, or print-ready A4 PDF directly from the editor.
+              Export native ATS-readable vector PDF, scalable SVG, high-resolution PNG, and native PPTX presentation slides.
             </p>
           </div>
         </div>

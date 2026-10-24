@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { TEMPLATES } from "@/components/templates/registry";
-import { Layout, Lock, CheckCircle2, Sparkles, Filter } from "lucide-react";
+import { Layout, Lock, CheckCircle2, Sparkles } from "lucide-react";
 
 export default async function TemplatesPage(props: {
   searchParams: Promise<{ category?: string; filter?: string }>;
@@ -113,7 +113,7 @@ export default async function TemplatesPage(props: {
         {filteredTemplates.map((t) => (
           <Link
             key={t.id}
-            href={`/dashboard/builder?template=${t.id}`}
+            href={`/dashboard/studio?template=${t.id}`}
             className="group relative flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all hover:border-accent/40 hover:shadow-md"
           >
             <div>

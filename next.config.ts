@@ -61,6 +61,25 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/builder",
+        destination: "/dashboard/studio",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/billing",
+        destination: "/dashboard/settings#billing",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/applications",
+        destination: "/dashboard/jobs",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
