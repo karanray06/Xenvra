@@ -19,7 +19,14 @@ import {
   ZoomIn,
   ZoomOut,
   ChevronDown,
+  ShieldCheck,
+  FileSpreadsheet,
+  RefreshCw,
 } from "lucide-react";
+import { StudioATSDrawer } from "./studio-ats-drawer";
+import { BulkCertificateModal } from "./bulk-certificate-modal";
+import { applyCareerDataBinding } from "@/lib/studio/career-kit";
+import { validateStudioDocumentATS } from "@/lib/studio/ats-validator";
 
 interface StudioTopBarProps {
   onStartPresenting: () => void;
@@ -44,6 +51,24 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isResizeOpen, setIsResizeOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isATSOpen, setIsATSOpen] = useState(false);
+  const [isBulkOpen, setIsBulkOpen] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+
+  const atsScore = React.useMemo(() => {
+    return validateStudioDocumentATS(doc).score;
+  }, [doc]);
+
+  const handleSyncProfile = () => {
+    const { doc: newDoc, boundCount } = applyCareerDataBinding(doc);
+    if (boundCount > 0) {
+      useStudioStore.setState({ doc: newDoc, isDirty: true });
+      setSyncFeedback(`Synced ${boundCount} fields`);
+    } else {
+      setSyncFeedback("All fields synced");
+    }
+    setTimeout(() => setSyncFeedback(null), 2500);
+  };
 
   const activePage = doc.pages[activePageIndex] || doc.pages[0];
 
@@ -200,6 +225,36 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
 
       {/* Right: Actions & Export */}
       <div className="flex items-center gap-2">
+        {/* Career Kit Profile Sync */}
+        <button
+          onClick={handleSyncProfile}
+          title="Sync Career Kit data into bound text elements"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#5E534D] hover:text-[#241915] bg-[#F6F1EE] hover:bg-[#E6EEF4] border border-[#C9CCD1] px-2.5 py-1.5 rounded-lg transition-colors"
+        >
+          <RefreshCw className="h-3 w-3 text-[#5A4032]" />
+          <span>{syncFeedback || "Career Kit"}</span>
+        </button>
+
+        {/* Live ATS Score Indicator */}
+        <button
+          onClick={() => setIsATSOpen(true)}
+          title="Open live ATS score breakdown and vector check"
+          className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg transition-colors"
+        >
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+          <span>ATS: {atsScore}%</span>
+        </button>
+
+        {/* Bulk Certificate / Placard Generator */}
+        <button
+          onClick={() => setIsBulkOpen(true)}
+          title="Generate bulk personalized PDFs from CSV"
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#5A4032] hover:bg-[#F6F1EE] border border-[#C9CCD1] px-2.5 py-1.5 rounded-lg transition-colors"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5" />
+          <span>Bulk</span>
+        </button>
+
         {/* 1-Click Recolour to Brand */}
         <button
           onClick={recolourToBrand}
@@ -207,7 +262,7 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
           className="flex items-center gap-1.5 text-xs font-semibold text-[#5A4032] hover:bg-[#F6F1EE] border border-[#5A4032] px-3 py-1.5 rounded-lg transition-colors"
         >
           <Palette className="h-3.5 w-3.5" />
-          <span>Brand Palette</span>
+          <span>Brand Kit</span>
         </button>
 
         {/* Present Mode for presentations */}
@@ -286,6 +341,12 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
           )}
         </div>
       </div>
+
+      {/* Slide-over ATS Drawer */}
+      <StudioATSDrawer isOpen={isATSOpen} onClose={() => setIsATSOpen(false)} />
+
+      {/* Bulk Certificate Modal */}
+      <BulkCertificateModal isOpen={isBulkOpen} onClose={() => setIsBulkOpen(false)} />
     </header>
   );
 }

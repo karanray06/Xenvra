@@ -175,7 +175,7 @@ export async function exportDocumentToPPTX(doc: StudioDocument, filename = "pres
 /**
  * 3. Vector ATS-Readable PDF Export with jsPDF
  */
-export async function exportDocumentToPDF(doc: StudioDocument, filename = "document.pdf", isPro = true) {
+export function buildJsPDFInstance(doc: StudioDocument, isPro = true) {
   const firstPage = doc.pages[0];
   const isLandscape = firstPage.width > firstPage.height;
 
@@ -210,14 +210,29 @@ export async function exportDocumentToPDF(doc: StudioDocument, filename = "docum
           align: el.align === "center" ? "center" : el.align === "right" ? "right" : "left",
         });
       } else if (el.type === "shape") {
-        pdf.setFillColor(el.fill);
+        const hasFill = el.fill && el.fill !== "transparent" && el.fill !== "none";
+        const hasStroke =
+          el.stroke &&
+          el.stroke !== "transparent" &&
+          el.stroke !== "none" &&
+          (el.strokeWidth || 0) > 0;
+
+        if (hasFill) pdf.setFillColor(el.fill);
+        if (hasStroke) {
+          pdf.setDrawColor(el.stroke!);
+          pdf.setLineWidth((el.strokeWidth || 1) * ptScale);
+        }
+
+        const style = hasFill && hasStroke ? "FD" : hasFill ? "F" : hasStroke ? "S" : null;
+        if (!style) continue;
+
         if (el.shapeType === "ellipse") {
           pdf.ellipse(
             (el.x + el.width / 2) * ptScale,
             (el.y + el.height / 2) * ptScale,
             (el.width / 2) * ptScale,
             (el.height / 2) * ptScale,
-            "F"
+            style
           );
         } else {
           pdf.roundedRect(
@@ -227,7 +242,7 @@ export async function exportDocumentToPDF(doc: StudioDocument, filename = "docum
             el.height * ptScale,
             (el.cornerRadius || 0) * ptScale,
             (el.cornerRadius || 0) * ptScale,
-            "F"
+            style
           );
         }
       }
@@ -243,6 +258,16 @@ export async function exportDocumentToPDF(doc: StudioDocument, filename = "docum
     }
   }
 
+  return pdf;
+}
+
+export function generateDocumentPDFBlob(doc: StudioDocument, isPro = true): Blob {
+  const pdf = buildJsPDFInstance(doc, isPro);
+  return pdf.output("blob");
+}
+
+export async function exportDocumentToPDF(doc: StudioDocument, filename = "document.pdf", isPro = true) {
+  const pdf = buildJsPDFInstance(doc, isPro);
   pdf.save(filename);
 }
 
