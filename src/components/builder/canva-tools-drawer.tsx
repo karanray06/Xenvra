@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useResume } from "./resume-provider";
 import { TEMPLATES } from "@/components/templates/registry";
+import { ALL_BRAND_PALETTE_CATEGORIES } from "@/lib/studio/brand-palettes";
 
 interface CanvaToolsDrawerProps {
   isOpen: boolean;
@@ -100,6 +101,7 @@ export function CanvaToolsDrawer({
   const [photoSaturation, setPhotoSaturation] = useState(100);
   const [photoSepia, setPhotoSepia] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedPaletteGroup, setSelectedPaletteGroup] = useState<string>("all");
 
   // Brand Kit LocalStorage
   const [savedBrandKit, setSavedBrandKit] = useState<{
@@ -575,41 +577,89 @@ export function CanvaToolsDrawer({
               )}
             </div>
 
-            {/* Curated Color Palettes */}
+            {/* Curated Brand Palettes */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
-                Curated Designer Palettes
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {PALETTES.map((p) => {
-                  const isSelected = accentColor.toLowerCase() === p.color.toLowerCase();
-                  return (
-                    <button
-                      key={p.name}
-                      onClick={() => onAccentColorChange(p.color)}
-                      className={`flex items-center gap-2.5 rounded-xl border p-2 text-left transition-all ${
-                        isSelected
-                          ? "border-accent bg-brand-50/30 ring-1 ring-accent"
-                          : "border-border bg-surface hover:border-accent/40"
-                      }`}
-                    >
-                      <span
-                        className="h-5 w-5 rounded-md border border-black/10 shrink-0 shadow-xs"
-                        style={{ backgroundColor: p.color }}
-                      />
-                      <span className="text-xs font-medium text-text-primary truncate">
-                        {p.name}
-                      </span>
-                    </button>
-                  );
-                })}
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">
+                  Curated Brand Palettes
+                </h3>
+                <span className="text-[10px] text-text-tertiary">59 Shades</span>
+              </div>
+
+              {/* Category Pills */}
+              <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
+                {[
+                  { id: "all", label: "All" },
+                  { id: "core-identity", label: "Signature" },
+                  { id: "desaturated-editorial", label: "Editorial" },
+                  { id: "acid-muted-pastels", label: "Pastels" },
+                  { id: "botanical-earth", label: "Botanical" },
+                  { id: "brutalist-grays", label: "Brutalist" },
+                  { id: "warm-solar", label: "Solar" },
+                  { id: "deep-cosmic", label: "Cosmic" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedPaletteGroup(tab.id)}
+                    className={`px-2.5 py-1 rounded-md font-medium whitespace-nowrap transition-colors ${
+                      selectedPaletteGroup === tab.id
+                        ? "bg-accent text-white"
+                        : "bg-surface-secondary text-text-secondary hover:bg-surface-tertiary"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Swatches List */}
+              <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
+                {ALL_BRAND_PALETTE_CATEGORIES.filter(
+                  (cat) => selectedPaletteGroup === "all" || cat.id === selectedPaletteGroup
+                ).map((cat) => (
+                  <div key={cat.id} className="space-y-1.5">
+                    <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-wider">
+                      {cat.name}
+                    </p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {cat.colors.map((c) => {
+                        const isSelected = accentColor.toLowerCase() === c.hex.toLowerCase();
+                        return (
+                          <button
+                            key={c.hex + c.name}
+                            onClick={() => onAccentColorChange(c.hex)}
+                            title={`${c.name} (${c.hex}) - ${c.description}`}
+                            className={`flex items-center gap-2 rounded-lg border p-1.5 text-left transition-all ${
+                              isSelected
+                                ? "border-accent bg-brand-50/40 ring-1 ring-accent"
+                                : "border-border bg-surface hover:border-accent/40"
+                            }`}
+                          >
+                            <span
+                              className="h-4 w-4 rounded-md border border-black/10 shrink-0 shadow-2xs"
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-medium text-text-primary truncate">
+                                {c.name}
+                              </p>
+                              <p className="text-[9px] font-mono text-text-tertiary">
+                                {c.hex}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
 
         {/* ================================================================= */}
-        {/* TAB 3: FONT LIBRARY (3,000+ FONTS) */}
+        {/* TAB 3: CURATED FONT PAIRINGS */}
         {/* ================================================================= */}
         {activeTab === "fonts" && (
           <div className="space-y-4">

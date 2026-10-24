@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, Palette } from "lucide-react";
+import { ALL_BRAND_PALETTE_CATEGORIES } from "@/lib/studio/brand-palettes";
 
 export const metadata: Metadata = {
   title: "Brand Identity Guide — Xenvra",
@@ -13,43 +14,6 @@ export const metadata: Metadata = {
 };
 
 export default function BrandPage() {
-  const colors = [
-    {
-      name: "Ice Silver",
-      hex: "#E6EEF4",
-      rgb: "230, 238, 244",
-      role: "Backgrounds, card surfaces, light logo tile, empty states",
-      textDark: true,
-    },
-    {
-      name: "Mocha Brown",
-      hex: "#5A4032",
-      rgb: "90, 64, 50",
-      role: "Primary CTA buttons, primary logo tile, key headings",
-      textDark: false,
-    },
-    {
-      name: "Platinum Silver",
-      hex: "#C9CCD1",
-      rgb: "201, 204, 209",
-      role: "Borders, structural dividers, subtle taglines, disabled states",
-      textDark: true,
-    },
-    {
-      name: "Pale Lavender",
-      hex: "#DCD3F2",
-      rgb: "220, 211, 242",
-      role: "Highlights, PRO badges, selected pill states, focus halo",
-      textDark: true,
-    },
-    {
-      name: "Mocha Ink",
-      hex: "#241915",
-      rgb: "36, 25, 21",
-      role: "High-contrast body text and high-hierarchy headlines",
-      textDark: false,
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-surface-secondary py-16 px-4 sm:px-6 lg:px-8">
@@ -155,33 +119,62 @@ export default function BrandPage() {
           </div>
         </section>
 
-        {/* Color Palette */}
-        <section className="mb-14">
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Color Palette</h2>
-          <p className="text-sm text-text-secondary mb-6">
-            Four core brand colors with strict WCAG AA contrast rules.
-          </p>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {colors.map((c) => (
-              <div
-                key={c.hex}
-                className="overflow-hidden rounded-xl border border-border bg-surface shadow-xs"
-              >
-                <div
-                  className="h-28 w-full p-4 flex items-end justify-between"
-                  style={{ backgroundColor: c.hex }}
-                >
-                  <span
-                    className="font-mono text-sm font-bold"
-                    style={{ color: c.textDark ? "#241915" : "#F5F9FB" }}
-                  >
-                    {c.hex}
+        {/* Brand Palettes & Color System */}
+        <section className="mb-14 space-y-10">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="flex items-center gap-1 rounded-full bg-[#E6EEF4] px-2.5 py-0.5 text-xs font-bold text-[#5A4032]">
+                <Palette className="h-3 w-3" /> Full Studio Color System
+              </span>
+              <span className="text-xs text-text-tertiary">59 Curated Editorial Hues</span>
+            </div>
+            <h2 className="text-2xl font-bold text-text-primary">Curated Color Palettes</h2>
+            <p className="text-sm text-text-secondary mt-1">
+              Low-chroma editorial neutrals, uncommon accents, natural earth slates, brutalist grays, warm solar pigments, and luxury cosmic dark tones.
+            </p>
+          </div>
+
+          <div className="space-y-12">
+            {ALL_BRAND_PALETTE_CATEGORIES.map((category) => (
+              <div key={category.id} className="space-y-4">
+                <div className="border-b border-border/80 pb-3 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                  <div>
+                    <h3 className="text-lg font-bold text-text-primary">{category.name}</h3>
+                    <p className="text-xs text-text-secondary mt-0.5">{category.description}</p>
+                  </div>
+                  <span className="text-xs font-mono text-accent font-semibold uppercase shrink-0">
+                    {category.subtitle}
                   </span>
                 </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-text-primary text-sm">{c.name}</h3>
-                  <p className="font-mono text-xs text-text-tertiary mt-0.5">RGB: {c.rgb}</p>
-                  <p className="text-xs text-text-secondary mt-2 leading-relaxed">{c.role}</p>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {category.colors.map((c) => (
+                    <div
+                      key={c.hex + c.name}
+                      className="overflow-hidden rounded-xl border border-border bg-surface shadow-xs transition-transform hover:-translate-y-0.5"
+                    >
+                      <div
+                        className="h-24 w-full p-4 flex items-end justify-between border-b border-black/5"
+                        style={{ backgroundColor: c.hex }}
+                      >
+                        <span
+                          className="font-mono text-xs font-bold px-2 py-0.5 rounded shadow-2xs backdrop-blur-xs"
+                          style={{
+                            color: c.textDark ? "#241915" : "#FFFFFF",
+                            backgroundColor: c.textDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.45)",
+                          }}
+                        >
+                          {c.hex}
+                        </span>
+                      </div>
+                      <div className="p-3.5">
+                        <h4 className="font-bold text-text-primary text-sm">{c.name}</h4>
+                        <p className="text-xs text-text-secondary mt-1 leading-relaxed">
+                          {c.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

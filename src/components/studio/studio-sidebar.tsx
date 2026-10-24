@@ -3,6 +3,11 @@
 import React, { useState, useRef } from "react";
 import { useStudioStore, type StudioPanel } from "@/lib/studio/store";
 import { ALL_STUDIO_TEMPLATES } from "@/lib/templates/manifest";
+import { ALL_BRAND_PALETTE_CATEGORIES } from "@/lib/studio/brand-palettes";
+import {
+  ELEMENT_CATEGORIES,
+  STUDIO_ELEMENT_LIBRARY,
+} from "@/lib/studio/element-library";
 import {
   LayoutTemplate,
   Shapes,
@@ -45,9 +50,39 @@ export function StudioSidebar() {
 
   const [templateCategory, setTemplateCategory] = useState<string>("All");
   const [templateSearch, setTemplateSearch] = useState<string>("");
+  const [brandCategory, setBrandCategory] = useState<string>("all");
+  const [elementCategory, setElementCategory] = useState<string>("all");
+  const [elementSearch, setElementSearch] = useState<string>("");
+  const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activePage = doc.pages[activePageIndex] || doc.pages[0];
+
+  const handleApplyColor = (hex: string) => {
+    if (selectedElementIds.length > 0) {
+      selectedElementIds.forEach((id) => {
+        const el = activePage.elements.find((e) => e.id === id);
+        if (el?.type === "text") updateElement(id, { color: hex });
+        else if (el?.type === "shape") updateElement(id, { fill: hex });
+        else if (el?.type === "frame") updateElement(id, { borderColor: hex });
+        else if (el?.type === "icon") updateElement(id, { color: hex });
+      });
+    } else {
+      const newPages = [...doc.pages];
+      newPages[activePageIndex] = { ...activePage, background: hex };
+      setDoc({ ...doc, pages: newPages });
+      useStudioStore.setState({ isDirty: true });
+    }
+  };
+
+  const handleCopyHex = (hex: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(hex);
+      setCopiedHex(hex);
+      setTimeout(() => setCopiedHex(null), 1800);
+    }
+  };
 
   const NAV_ITEMS: { id: StudioPanel; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "templates", label: "Templates", icon: LayoutTemplate },
@@ -123,6 +158,18 @@ export function StudioSidebar() {
       const matchDesc = t.description.toLowerCase().includes(query);
       const matchTag = t.tags.some((tag) => tag.toLowerCase().includes(query));
       if (!matchTitle && !matchDesc && !matchTag) return false;
+    }
+    return true;
+  });
+
+  const filteredElements = STUDIO_ELEMENT_LIBRARY.filter((item) => {
+    if (elementCategory !== "all" && item.category !== elementCategory) return false;
+    if (elementSearch.trim()) {
+      const query = elementSearch.toLowerCase();
+      const matchName = item.name.toLowerCase().includes(query);
+      const matchTag = item.tags.some((tag) => tag.toLowerCase().includes(query));
+      const matchCat = item.categoryLabel.toLowerCase().includes(query);
+      if (!matchName && !matchTag && !matchCat) return false;
     }
     return true;
   });
@@ -256,10 +303,79 @@ export function StudioSidebar() {
 
           {/* Panel: Elements */}
           {activePanel === "elements" && (
-            <div className="space-y-5">
-              {/* Shapes */}
-              <section className="space-y-2">
-                <p className="text-[11px] font-bold text-[#5E534D]">Basic Shapes</p>
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8A8F98]" />
+                <input
+                  type="text"
+                  placeholder="Search 98+ elements (Y2K, Boho, Zine...)"
+                  value={elementSearch}
+                  onChange={(e) => setElementSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[#C9CCD1] bg-white placeholder-[#8A8F98] focus:outline-none focus:border-[#5A4032]"
+                />
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {ELEMENT_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setElementCategory(cat.id)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors flex items-center gap-1 ${
+                      elementCategory === cat.id
+                        ? "bg-[#5A4032] text-white shadow-xs"
+                        : "bg-[#F5F9FB] border border-[#C9CCD1] text-[#5E534D] hover:bg-[#E6EEF4]"
+                    }`}
+                    title={cat.description}
+                  >
+                    <span>{cat.emoji}</span>
+                    <span>{cat.name.split(",")[0].replace("Cute, ", "")}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active Category Description & Count */}
+              <div className="flex items-center justify-between text-[10px] font-bold text-[#8A8F98] uppercase tracking-wider pt-1">
+                <span>{filteredElements.length} Elements</span>
+                <span className="text-[#5A4032]">
+                  {ELEMENT_CATEGORIES.find((c) => c.id === elementCategory)?.emoji}{" "}
+                  {ELEMENT_CATEGORIES.find((c) => c.id === elementCategory)?.name.split(",")[0]}
+                </span>
+              </div>
+
+              {/* Curated Aesthetic Elements Grid */}
+              <div className="grid grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
+                {filteredElements.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      const newEl = item.createElement(140, 140, activePage.elements.length + 1);
+                      addElement(newEl);
+                    }}
+                    className="group relative p-2 rounded-xl border border-[#C9CCD1] hover:border-[#5A4032] bg-[#FAF8F5] hover:bg-white cursor-pointer transition-all shadow-2xs hover:shadow-sm flex flex-col items-center"
+                    title={`Click to drop: ${item.name}`}
+                  >
+                    <div
+                      className="w-full h-20 bg-white rounded-lg border border-[#E6EEF4] flex items-center justify-center p-2 mb-1.5 overflow-hidden group-hover:scale-105 transition-transform"
+                      dangerouslySetInnerHTML={{ __html: item.svgIcon }}
+                    />
+                    <p className="text-[10px] font-semibold text-[#241915] text-center line-clamp-1 w-full">
+                      {item.name}
+                    </p>
+                    <span className="text-[8px] text-[#8A8F98] truncate w-full text-center">
+                      {item.tags[0] || item.category}
+                    </span>
+                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#5A4032] text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xs">
+                      <Plus className="h-3 w-3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Quick Shapes */}
+              <section className="space-y-2 pt-2 border-t border-[#C9CCD1]">
+                <p className="text-[11px] font-bold text-[#5E534D]">Quick Shapes</p>
                 <div className="grid grid-cols-4 gap-2">
                   <button
                     onClick={() =>
@@ -281,7 +397,7 @@ export function StudioSidebar() {
                         cornerRadius: 8,
                       })
                     }
-                    className="h-12 border border-[#C9CCD1] rounded-lg bg-[#5A4032] hover:opacity-90 transition-opacity"
+                    className="h-10 border border-[#C9CCD1] rounded-lg bg-[#5A4032] hover:opacity-90 transition-opacity"
                     title="Add Rectangle"
                   />
                   <button
@@ -304,7 +420,7 @@ export function StudioSidebar() {
                         cornerRadius: 0,
                       })
                     }
-                    className="h-12 border border-[#C9CCD1] rounded-full bg-[#DCD3F2] hover:opacity-90 transition-opacity"
+                    className="h-10 border border-[#C9CCD1] rounded-full bg-[#DCD3F2] hover:opacity-90 transition-opacity"
                     title="Add Circle"
                   />
                   <button
@@ -327,7 +443,7 @@ export function StudioSidebar() {
                         cornerRadius: 0,
                       })
                     }
-                    className="h-12 border border-[#C9CCD1] rounded-lg bg-white flex items-center justify-center p-2"
+                    className="h-10 border border-[#C9CCD1] rounded-lg bg-white flex items-center justify-center p-2"
                     title="Add Divider"
                   >
                     <div className="w-full h-0.5 bg-[#C9CCD1]" />
@@ -336,7 +452,7 @@ export function StudioSidebar() {
                     onClick={() =>
                       addElement({
                         id: `shape-${Date.now()}`,
-                        name: "Ice Badge",
+                        name: "Pill Badge",
                         type: "shape",
                         shapeType: "rect",
                         x: 100,
@@ -352,7 +468,7 @@ export function StudioSidebar() {
                         cornerRadius: 20,
                       })
                     }
-                    className="h-12 border border-[#C9CCD1] rounded-full bg-[#E6EEF4]"
+                    className="h-10 border border-[#C9CCD1] rounded-full bg-[#E6EEF4]"
                     title="Add Pill Badge"
                   />
                 </div>
@@ -361,7 +477,7 @@ export function StudioSidebar() {
               {/* Photo Frames ("Add Photo" Masks) */}
               <section className="space-y-2">
                 <p className="text-[11px] font-bold text-[#5E534D]">Photo Frames</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() =>
                       addElement({
@@ -386,12 +502,12 @@ export function StudioSidebar() {
                         borderWidth: 2,
                       })
                     }
-                    className="p-3 border border-dashed border-[#C9CCD1] rounded-lg bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center gap-1.5 transition-colors"
+                    className="p-2.5 border border-dashed border-[#C9CCD1] rounded-lg bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center gap-1 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-full border border-dashed border-[#5A4032] flex items-center justify-center">
-                      <ImageIcon className="h-4 w-4 text-[#5A4032]" />
+                    <div className="w-8 h-8 rounded-full border border-dashed border-[#5A4032] flex items-center justify-center">
+                      <ImageIcon className="h-3.5 w-3.5 text-[#5A4032]" />
                     </div>
-                    <span className="text-[10px] font-semibold text-[#241915]">Circle Frame</span>
+                    <span className="text-[9px] font-semibold text-[#241915]">Circle</span>
                   </button>
 
                   <button
@@ -418,12 +534,44 @@ export function StudioSidebar() {
                         borderWidth: 2,
                       })
                     }
-                    className="p-3 border border-dashed border-[#C9CCD1] rounded-lg bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center gap-1.5 transition-colors"
+                    className="p-2.5 border border-dashed border-[#C9CCD1] rounded-lg bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center gap-1 transition-colors"
                   >
-                    <div className="w-12 h-8 rounded-lg border border-dashed border-[#5A4032] flex items-center justify-center">
-                      <ImageIcon className="h-4 w-4 text-[#5A4032]" />
+                    <div className="w-10 h-7 rounded border border-dashed border-[#5A4032] flex items-center justify-center">
+                      <ImageIcon className="h-3.5 w-3.5 text-[#5A4032]" />
                     </div>
-                    <span className="text-[10px] font-semibold text-[#241915]">Rounded Card</span>
+                    <span className="text-[9px] font-semibold text-[#241915]">Card</span>
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      addElement({
+                        id: `frame-polaroid-${Date.now()}`,
+                        name: "Polaroid Frame",
+                        type: "frame",
+                        frameShape: "polaroid",
+                        x: 150,
+                        y: 150,
+                        width: 240,
+                        height: 300,
+                        rotation: 0,
+                        opacity: 1,
+                        locked: false,
+                        hidden: false,
+                        zIndex: activePage.elements.length + 1,
+                        placeholderText: "Drop Photo",
+                        zoom: 1,
+                        cropX: 0,
+                        cropY: 0,
+                        borderColor: "#D1D5DB",
+                        borderWidth: 2,
+                      })
+                    }
+                    className="p-2.5 border border-dashed border-[#C9CCD1] rounded-lg bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center gap-1 transition-colors"
+                  >
+                    <div className="w-8 h-10 rounded border border-dashed border-[#5A4032] flex items-center justify-center">
+                      <ImageIcon className="h-3.5 w-3.5 text-[#5A4032]" />
+                    </div>
+                    <span className="text-[9px] font-semibold text-[#241915]">Polaroid</span>
                   </button>
                 </div>
               </section>
@@ -458,9 +606,9 @@ export function StudioSidebar() {
                         colors: ["#5A4032", "#7B66B8", "#DCD3F2", "#C9CCD1"],
                       })
                     }
-                    className="p-3 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] flex flex-col items-center gap-1.5 transition-colors"
+                    className="p-2.5 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] flex flex-col items-center gap-1 transition-colors"
                   >
-                    <BarChart3 className="h-5 w-5 text-[#5A4032]" />
+                    <BarChart3 className="h-4 w-4 text-[#5A4032]" />
                     <span className="text-[10px] font-semibold text-[#241915]">Bar Chart</span>
                   </button>
 
@@ -484,9 +632,9 @@ export function StudioSidebar() {
                         backgroundColor: "#FFFFFF",
                       })
                     }
-                    className="p-3 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] flex flex-col items-center gap-1.5 transition-colors"
+                    className="p-2.5 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] flex flex-col items-center gap-1 transition-colors"
                   >
-                    <QrCode className="h-5 w-5 text-[#5A4032]" />
+                    <QrCode className="h-4 w-4 text-[#5A4032]" />
                     <span className="text-[10px] font-semibold text-[#241915]">Contact QR</span>
                   </button>
                 </div>
@@ -638,35 +786,105 @@ export function StudioSidebar() {
           {/* Panel: Brand Kit */}
           {activePanel === "brand" && (
             <div className="space-y-4">
-              <div>
-                <p className="text-xs font-bold text-[#241915] mb-2">Core 5 Brand Colours</p>
-                <div className="space-y-2">
-                  {[
-                    { name: "Ice Silver", hex: "#E6EEF4" },
-                    { name: "Mocha Brown", hex: "#5A4032" },
-                    { name: "Platinum Silver", hex: "#C9CCD1" },
-                    { name: "Pale Lavender", hex: "#DCD3F2" },
-                    { name: "Charcoal Ink", hex: "#241915" },
-                  ].map((color) => (
-                    <div
-                      key={color.hex}
-                      className="flex items-center justify-between p-2 rounded-lg border border-[#C9CCD1]"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <div
-                          className="w-6 h-6 rounded-md border border-[#C9CCD1]"
-                          style={{ backgroundColor: color.hex }}
-                        />
-                        <span className="text-xs font-semibold text-[#241915]">
-                          {color.name}
+              {/* Contextual instruction badge */}
+              <div className="p-2.5 rounded-lg bg-[#E6EEF4] border border-[#C9CCD1] text-[11px] text-[#5A4032] flex items-center justify-between">
+                <span>
+                  {selectedElementIds.length > 0
+                    ? `Click swatch to colour selected element (${selectedElementIds.length})`
+                    : "Click swatch to set slide background"}
+                </span>
+                {copiedHex && (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded animate-fade-in">
+                    Copied {copiedHex}!
+                  </span>
+                )}
+              </div>
+
+              {/* Category Pills Filter */}
+              <div className="flex gap-1 overflow-x-auto pb-1.5 no-scrollbar border-b border-[#C9CCD1]">
+                {[
+                  { id: "all", label: "All Palettes" },
+                  { id: "core-identity", label: "Signature" },
+                  { id: "desaturated-editorial", label: "Editorial" },
+                  { id: "acid-muted-pastels", label: "Pastels" },
+                  { id: "botanical-earth", label: "Botanical" },
+                  { id: "brutalist-grays", label: "Brutalist" },
+                  { id: "warm-solar", label: "Solar" },
+                  { id: "deep-cosmic", label: "Cosmic Dark" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setBrandCategory(tab.id)}
+                    className={`whitespace-nowrap px-2.5 py-1 text-[11px] font-semibold rounded-md transition-colors ${
+                      brandCategory === tab.id
+                        ? "bg-[#5A4032] text-white"
+                        : "bg-[#F6F1EE] text-[#5E534D] hover:bg-[#E6EEF4] hover:text-[#241915]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Palette Categories List */}
+              <div className="space-y-5 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
+                {ALL_BRAND_PALETTE_CATEGORIES.filter(
+                  (cat) => brandCategory === "all" || cat.id === brandCategory
+                ).map((cat) => (
+                  <div key={cat.id} className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-[#241915]">{cat.name}</h4>
+                        <span className="text-[9px] font-mono uppercase bg-[#E6EEF4] text-[#5A4032] px-1.5 py-0.5 rounded">
+                          {cat.subtitle}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono text-[#5E534D]">
-                        {color.hex}
-                      </span>
+                      <p className="text-[10px] text-[#5E534D] mt-0.5 leading-tight">
+                        {cat.description}
+                      </p>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {cat.colors.map((color) => (
+                        <div
+                          key={color.hex + color.name}
+                          onClick={() => handleApplyColor(color.hex)}
+                          className="group flex items-center justify-between p-2 rounded-lg border border-[#C9CCD1] hover:border-[#5A4032] hover:bg-[#F6F1EE] cursor-pointer transition-all"
+                          title={`${color.name} (${color.hex}) - ${color.description}`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-6 h-6 rounded-md border border-black/10 shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-[#241915] truncate">
+                                {color.name}
+                              </p>
+                              <p className="text-[9.5px] text-[#8A8F98] truncate max-w-[170px]">
+                                {color.description}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0 pl-1">
+                            <span className="text-[10px] font-mono text-[#5E534D]">
+                              {color.hex}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => handleCopyHex(color.hex, e)}
+                              title="Copy hex code"
+                              className="p-1 rounded text-[#8A8F98] hover:text-[#241915] hover:bg-white transition-colors"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

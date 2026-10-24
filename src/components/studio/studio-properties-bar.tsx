@@ -18,13 +18,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const BRAND_PALETTE = [
-  { name: "Ice Silver", color: "#E6EEF4" },
-  { name: "Mocha Brown", color: "#5A4032" },
-  { name: "Platinum Silver", color: "#C9CCD1" },
-  { name: "Pale Lavender", color: "#DCD3F2" },
-  { name: "Charcoal Ink", color: "#241915" },
-];
+import { ALL_BRAND_PALETTE_CATEGORIES } from "@/lib/studio/brand-palettes";
 
 const FONTS = [
   "Plus Jakarta Sans",
@@ -55,6 +49,7 @@ export function StudioPropertiesBar() {
   } = useStudioStore();
 
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [paletteTab, setPaletteTab] = useState<string>("all");
 
   const activePage = doc.pages[activePageIndex] || doc.pages[0];
   const selected = activePage.elements.find((el) => selectedElementIds.includes(el.id));
@@ -220,24 +215,79 @@ export function StudioPropertiesBar() {
 
           {/* Brand Palette Swatches Popup */}
           {isColorPickerOpen && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-white rounded-lg shadow-xl border border-[#C9CCD1] z-50 w-52">
-              <p className="text-[10px] font-bold text-[#8A8F98] uppercase tracking-wider mb-2">
-                Brand Palette
-              </p>
-              <div className="grid grid-cols-5 gap-1.5 mb-2">
-                {BRAND_PALETTE.map((swatch) => (
+            <div className="absolute top-full left-0 mt-1 p-2.5 bg-white rounded-xl shadow-2xl border border-[#C9CCD1] z-50 w-72 space-y-2">
+              <div className="flex items-center justify-between border-b border-[#C9CCD1] pb-1.5">
+                <span className="text-[11px] font-bold text-[#241915]">Brand Palette</span>
+                <span className="text-[10px] text-[#8A8F98]">59 Curated Tones</span>
+              </div>
+
+              {/* Category selector pills */}
+              <div className="flex gap-1 overflow-x-auto pb-1 no-scrollbar text-[10px]">
+                {[
+                  { id: "all", label: "All" },
+                  { id: "core-identity", label: "Core" },
+                  { id: "desaturated-editorial", label: "Editorial" },
+                  { id: "acid-muted-pastels", label: "Pastels" },
+                  { id: "botanical-earth", label: "Botanical" },
+                  { id: "brutalist-grays", label: "Brutalist" },
+                  { id: "warm-solar", label: "Solar" },
+                  { id: "deep-cosmic", label: "Cosmic" },
+                ].map((tab) => (
                   <button
-                    key={swatch.color}
-                    onClick={() => {
-                      if (isText) updateSelectedElements({ color: swatch.color });
-                      if (isShape) updateSelectedElements({ fill: swatch.color });
-                      setIsColorPickerOpen(false);
-                    }}
-                    title={swatch.name}
-                    className="w-8 h-8 rounded-md border border-[#C9CCD1] hover:scale-110 transition-transform"
-                    style={{ backgroundColor: swatch.color }}
-                  />
+                    key={tab.id}
+                    onClick={() => setPaletteTab(tab.id)}
+                    className={`px-2 py-0.5 rounded font-medium whitespace-nowrap transition-colors ${
+                      paletteTab === tab.id
+                        ? "bg-[#5A4032] text-white"
+                        : "bg-[#F6F1EE] text-[#5E534D] hover:bg-[#E6EEF4]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
+              </div>
+
+              {/* Swatches view */}
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {ALL_BRAND_PALETTE_CATEGORIES.filter(
+                  (cat) => paletteTab === "all" || cat.id === paletteTab
+                ).map((cat) => (
+                  <div key={cat.id}>
+                    <p className="text-[10px] font-semibold text-[#8A8F98] mb-1">
+                      {cat.name}
+                    </p>
+                    <div className="grid grid-cols-9 gap-1">
+                      {cat.colors.map((swatch) => (
+                        <button
+                          key={swatch.hex + swatch.name}
+                          onClick={() => {
+                            if (isText) updateSelectedElements({ color: swatch.hex });
+                            if (isShape) updateSelectedElements({ fill: swatch.hex });
+                            setIsColorPickerOpen(false);
+                          }}
+                          title={`${swatch.name} (${swatch.hex})\n${swatch.description}`}
+                          className="w-6 h-6 rounded border border-black/15 hover:scale-125 hover:z-10 transition-transform shadow-2xs"
+                          style={{ backgroundColor: swatch.hex }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Custom Hex Picker Input */}
+              <div className="pt-2 border-t border-[#C9CCD1] flex items-center justify-between gap-2">
+                <span className="text-[10px] text-[#5E534D]">Custom Hex:</span>
+                <input
+                  type="text"
+                  value={isText ? selected.color : isShape ? selected.fill : "#5A4032"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (isText) updateSelectedElements({ color: val });
+                    if (isShape) updateSelectedElements({ fill: val });
+                  }}
+                  className="font-mono text-[11px] px-2 py-0.5 rounded border border-[#C9CCD1] w-24 text-center focus:border-[#5A4032] outline-none"
+                />
               </div>
             </div>
           )}
