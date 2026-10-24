@@ -1,6 +1,6 @@
 import type { TemplateProps } from "./registry";
 
-export function ModernClassic({ data, accentColor = "#F97316" }: TemplateProps) {
+export function ModernClassic({ data, accentColor = "#5A4032" }: TemplateProps) {
   const c = data.contact;
   return (
     <div className="flex h-full font-[system-ui]" style={{ fontSize: "10px", lineHeight: "1.4" }}>

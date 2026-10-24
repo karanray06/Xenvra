@@ -125,7 +125,7 @@ export function createEmptyResume(): ResumeData {
 
 // ===== Template Theme =====
 export const templateThemeSchema = z.object({
-  accentColor: z.string().default("#F97316"),
+  accentColor: z.string().default("#5A4032"),
   fontFamily: z.string().default("Inter"),
   fontSize: z.enum(["small", "medium", "large"]).default("medium"),
   margins: z.enum(["narrow", "normal", "wide"]).default("normal"),

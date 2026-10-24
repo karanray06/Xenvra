@@ -8,7 +8,6 @@ import {
   Phone,
   MapPin,
   Globe,
-  Calendar,
   Briefcase,
   GraduationCap,
   Sparkles,
@@ -184,7 +183,7 @@ export function UniversalRenderer({
     );
   };
 
-  const renderEducation = (variant: string) => {
+  const renderEducation = (_variant?: string) => {
     if (!data.education || data.education.length === 0) return null;
     return (
       <div className="resume-section mb-4">

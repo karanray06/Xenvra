@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Palette,
   Sparkles,
-  Sliders,
   Type,
   Image as ImageIcon,
   Share2,
@@ -19,7 +18,6 @@ import {
   Download,
   Scissors,
   Truck,
-  Printer,
   Layout,
   Plus,
 } from "lucide-react";
@@ -36,27 +34,30 @@ interface CanvaToolsDrawerProps {
 }
 
 const PALETTES = [
-  { name: "Executive Navy", color: "#1E3A8A", bg: "#EFF6FF" },
-  { name: "Mocha Metallic", color: "#5A4032", bg: "#FBF7F4" },
-  { name: "Emerald Growth", color: "#059669", bg: "#ECFDF5" },
-  { name: "Slate Minimal", color: "#475569", bg: "#F8FAFC" },
-  { name: "Royal Indigo", color: "#4F46E5", bg: "#EEF2FF" },
-  { name: "Crimson Impact", color: "#DC2626", bg: "#FEF2F2" },
-  { name: "Cyber Teal", color: "#0D9488", bg: "#F0FDFA" },
-  { name: "Charcoal Mono", color: "#18181B", bg: "#FAFAFA" },
+  { name: "Mocha Brown (Brand)", color: "#5A4032", bg: "#F6F1EE" },
+  { name: "Charcoal Ink (Brand)", color: "#241915", bg: "#F5F9FB" },
+  { name: "Pale Lavender (Brand)", color: "#DCD3F2", bg: "#EEEAF9" },
+  { name: "Ice Silver (Brand)", color: "#E6EEF4", bg: "#F5F9FB" },
+  { name: "Platinum Silver (Brand)", color: "#C9CCD1", bg: "#E3E5E8" },
+  { name: "Lavender Accent", color: "#7B66B8", bg: "#EEEAF9" },
+  { name: "Mocha Dark", color: "#352520", bg: "#F6F1EE" },
+  { name: "Warm Slate", color: "#8A8F98", bg: "#F5F9FB" },
 ];
 
 const FONT_PAIRS = [
-  { name: "Inter (Universal Tech)", font: "Inter", preview: "Aa Modern Clean" },
-  { name: "Plus Jakarta Sans (Product)", font: "Plus Jakarta Sans", preview: "Aa Bold Tech" },
-  { name: "Playfair Display (Executive)", font: "Playfair Display", preview: "Aa Elegant Serif" },
-  { name: "Space Grotesk (Developer)", font: "Space Grotesk", preview: "Aa Monospace Feel" },
-  { name: "Merriweather (Corporate)", font: "Merriweather", preview: "Aa Classic Editorial" },
-  { name: "Lora (Academic)", font: "Lora", preview: "Aa Scholarly" },
-  { name: "Outfit (Creative Studio)", font: "Outfit", preview: "Aa Geometric" },
+  { name: "Plus Jakarta Sans (UI & Product)", font: "Plus Jakarta Sans", preview: "Aa Bold Tech" },
+  { name: "Inter (Universal Sans)", font: "Inter", preview: "Aa Modern Clean" },
+  { name: "Space Grotesk (Tech & Code)", font: "Space Grotesk", preview: "Aa Monospace Feel" },
+  { name: "DM Serif Display (Executive)", font: "DM Serif Display", preview: "Aa High Contrast" },
+  { name: "Playfair Display (Editorial)", font: "Playfair Display", preview: "Aa Elegant Serif" },
   { name: "Poppins (Contemporary)", font: "Poppins", preview: "Aa Friendly Sans" },
-  { name: "Montserrat (Design)", font: "Montserrat", preview: "Aa Sharp Modern" },
-  { name: "Fira Code (Tech Specialist)", font: "Fira Code", preview: "Aa Monospace Code" },
+  { name: "Montserrat (Design & Decks)", font: "Montserrat", preview: "Aa Sharp Modern" },
+  { name: "Lora (Academic)", font: "Lora", preview: "Aa Scholarly" },
+  { name: "Oswald (Bold Headers)", font: "Oswald", preview: "Aa Condensed" },
+  { name: "Bebas Neue (Poster & Cover)", font: "Bebas Neue", preview: "Aa Impactful" },
+  { name: "JetBrains Mono (Developer)", font: "JetBrains Mono", preview: "Aa Code Mono" },
+  { name: "Noto Sans Devanagari (Hindi)", font: "Noto Sans Devanagari", preview: "Aa नमस्ते / हिन्दी" },
+  { name: "Noto Sans Bengali (Bengali)", font: "Noto Sans Bengali", preview: "Aa বাংলা লিপি" },
 ];
 
 const TEMPLATE_CATEGORIES = [
@@ -500,21 +501,33 @@ export function CanvaToolsDrawer({
                 Store your brand color, typography, and logo to effortlessly apply across any resume or document.
               </p>
 
-              <div className="flex items-center gap-2 pt-1">
+              <div className="space-y-2 pt-1">
                 <button
-                  onClick={handleSaveBrandKit}
-                  className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-bold text-white shadow-xs hover:bg-accent-hover transition-colors"
+                  onClick={() => {
+                    onAccentColorChange("#5A4032");
+                    onFontFamilyChange("Plus Jakarta Sans");
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-accent text-white px-3 py-2 text-xs font-bold shadow-xs hover:bg-accent-hover transition-colors"
                 >
-                  Save Current As Brand Kit
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Recolour to Brand Palette (#5A4032)</span>
                 </button>
-                {savedBrandKit && (
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={handleApplyBrandKit}
-                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-bold text-text-primary hover:bg-surface-secondary shadow-xs transition-colors"
+                    onClick={handleSaveBrandKit}
+                    className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-primary shadow-xs hover:bg-surface-secondary transition-colors"
                   >
-                    Apply Saved Brand Kit
+                    Save As Brand Kit
                   </button>
-                )}
+                  {savedBrandKit && (
+                    <button
+                      onClick={handleApplyBrandKit}
+                      className="flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-primary hover:bg-surface-secondary shadow-xs transition-colors"
+                    >
+                      Apply Saved
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -759,7 +772,7 @@ export function CanvaToolsDrawer({
             <button
               onClick={handleRemoveBackground}
               disabled={!data.contact?.photoUrl || isRemovingBg}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent to-purple-600 p-2.5 text-xs font-bold text-white shadow-xs hover:opacity-95 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-accent to-brand-800 p-2.5 text-xs font-bold text-white shadow-xs hover:opacity-95 disabled:opacity-50"
             >
               <Scissors className="h-4 w-4" />
               {isRemovingBg ? "Processing Transparency..." : bgRemoved ? "Background Removed ✓" : "1-Click Background Remover"}
@@ -808,6 +821,36 @@ export function CanvaToolsDrawer({
                   max="100"
                   value={photoGrayscale}
                   onChange={(e) => setPhotoGrayscale(Number(e.target.value))}
+                  className="w-full accent-accent"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs font-medium text-text-secondary mb-1">
+                  <span>Saturation</span>
+                  <span>{photoSaturation}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="200"
+                  value={photoSaturation}
+                  onChange={(e) => setPhotoSaturation(Number(e.target.value))}
+                  className="w-full accent-accent"
+                />
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs font-medium text-text-secondary mb-1">
+                  <span>Sepia</span>
+                  <span>{photoSepia}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={photoSepia}
+                  onChange={(e) => setPhotoSepia(Number(e.target.value))}
                   className="w-full accent-accent"
                 />
               </div>

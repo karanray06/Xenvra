@@ -4,6 +4,11 @@ import { Minimalist } from "./minimal-1";
 import { ATSOptimized } from "./ats-1";
 import { ProfessionalExecutive } from "./professional-1";
 import { ModernGradientEdge } from "./modern-2";
+import { TwoColumnSlate } from "./two-column-slate";
+import { MinimalSerif } from "./minimal-serif";
+import { CreativeSidebar } from "./creative-sidebar";
+import { CompactOnePage } from "./compact-one-page";
+import { AcademicCV } from "./academic-cv";
 import { UniversalRenderer } from "./universal-renderer";
 import { getTemplateSpecById } from "@/lib/templates/library";
 
@@ -20,7 +25,7 @@ export function TemplateRenderer({
   accentColor,
   fontFamily,
 }: TemplateRendererProps) {
-  // 1. Support legacy templates
+  // 1. Support 10 core in-palette templates
   switch (templateId) {
     case "modern-1":
       return <ModernClassic data={data} accentColor={accentColor} />;
@@ -32,6 +37,16 @@ export function TemplateRenderer({
       return <ProfessionalExecutive data={data} accentColor={accentColor} />;
     case "modern-2":
       return <ModernGradientEdge data={data} accentColor={accentColor} />;
+    case "two-column-slate":
+      return <TwoColumnSlate data={data} accentColor={accentColor} fontFamily={fontFamily} />;
+    case "minimal-serif":
+      return <MinimalSerif data={data} accentColor={accentColor} fontFamily={fontFamily} />;
+    case "creative-sidebar":
+      return <CreativeSidebar data={data} accentColor={accentColor} fontFamily={fontFamily} />;
+    case "compact-one-page":
+      return <CompactOnePage data={data} accentColor={accentColor} fontFamily={fontFamily} />;
+    case "academic-cv":
+      return <AcademicCV data={data} accentColor={accentColor} fontFamily={fontFamily} />;
     default: {
       // 2. Data-driven TemplateSpec renderer (All 24 Canva-parity templates)
       const spec = getTemplateSpecById(templateId);

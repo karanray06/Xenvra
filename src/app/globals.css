@@ -1,7 +1,15 @@
 @import "tailwindcss";
+@import "../styles/fonts.css";
 
 /* ===== Xenvra Brand Tokens (Tailwind v4 @theme) ===== */
 @theme inline {
+  /* Core 5 Brand Palette (Official) */
+  --color-brand-ice: #E6EEF4;
+  --color-brand-mocha: #5A4032;
+  --color-brand-platinum: #C9CCD1;
+  --color-brand-lavender: #DCD3F2;
+  --color-brand-charcoal: #241915;
+
   /* Mocha scale (brand-600 = Mocha Brown) */
   --color-brand-50:  #F6F1EE;
   --color-brand-100: #EBE0DA;

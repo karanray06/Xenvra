@@ -9,17 +9,13 @@ import {
   Calendar,
   XCircle,
   Trash2,
-  FileText,
   X,
   Loader2,
   Search,
-  ExternalLink,
   Sparkles,
   MapPin,
-  Building,
   Lock,
   ArrowUpRight,
-  Filter,
 } from "lucide-react";
 import type { NormalizedJob } from "@/app/api/jobs/search/route";
 

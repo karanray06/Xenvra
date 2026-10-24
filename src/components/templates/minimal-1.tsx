@@ -1,6 +1,6 @@
 import type { TemplateProps } from "./registry";
 
-export function Minimalist({ data, accentColor = "#F97316" }: TemplateProps) {
+export function Minimalist({ data, accentColor = "#5A4032" }: TemplateProps) {
   const c = data.contact;
   return (
     <div className="p-8 font-[system-ui]" style={{ fontSize: "10px", lineHeight: "1.5" }}>

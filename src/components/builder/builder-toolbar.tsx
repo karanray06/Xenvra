@@ -85,8 +85,8 @@ export function BuilderToolbar({ onModeChange, onOpenCanvaTools }: BuilderToolba
       if (!res.ok) {
         const json = await res.json();
         if (res.status === 403) {
-          if (confirm("DOCX export is available on Beginner and Pro plans. Would you like to view plans on the Billing page?")) {
-            router.push("/dashboard/billing");
+          if (confirm("DOCX export is available on Beginner and Pro plans. Would you like to view plans in Settings?")) {
+            router.push("/dashboard/settings#billing");
           }
           return;
         }
@@ -114,9 +114,9 @@ export function BuilderToolbar({ onModeChange, onOpenCanvaTools }: BuilderToolba
     <>
       {/* Real-time Conflict Bar (Non-blocking) */}
       {conflictRemote && (
-        <div className="flex items-center justify-between bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900 animate-slide-down">
+        <div className="flex items-center justify-between bg-warning-light border-b border-warning/30 px-4 py-2 text-xs text-warning animate-slide-down">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
             <span>
               <strong>Remote update:</strong> This resume was edited in another tab or device.
             </span>
@@ -124,13 +124,13 @@ export function BuilderToolbar({ onModeChange, onOpenCanvaTools }: BuilderToolba
           <div className="flex items-center gap-2">
             <button
               onClick={resolveConflictReload}
-              className="rounded bg-white border border-amber-300 px-2.5 py-1 font-semibold text-amber-900 hover:bg-amber-100 transition-colors shadow-xs"
+              className="rounded bg-surface border border-warning/40 px-2.5 py-1 font-semibold text-warning hover:bg-warning-light transition-colors shadow-xs"
             >
               Reload Remote
             </button>
             <button
               onClick={resolveConflictKeepMine}
-              className="rounded bg-amber-700 px-2.5 py-1 font-semibold text-white hover:bg-amber-800 transition-colors shadow-xs"
+              className="rounded bg-accent px-2.5 py-1 font-semibold text-white hover:bg-accent-hover transition-colors shadow-xs"
             >
               Keep Mine
             </button>
@@ -161,7 +161,7 @@ export function BuilderToolbar({ onModeChange, onOpenCanvaTools }: BuilderToolba
               </span>
             )}
             {saveStatus === "offline" && (
-              <span className="flex items-center gap-1 text-amber-600 font-medium">
+              <span className="flex items-center gap-1 text-warning font-medium">
                 <CloudOff className="h-3.5 w-3.5" />
                 <span>Offline – will sync</span>
               </span>
