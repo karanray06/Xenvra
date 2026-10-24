@@ -41,7 +41,7 @@ export interface Entitlement {
 export interface Payment {
   id: string;
   provider_order_id?: string | null;
-  razorpay_order_id: string | null;
+  razorpay_order_id?: string | null;
   plan: string;
   amount_inr: number;
   status: string;
@@ -80,6 +80,9 @@ export function BillingClient({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [checkoutModal, setCheckoutModal] = useState<CheckoutModalState | null>(null);
   const [copiedVpa, setCopiedVpa] = useState<boolean>(false);
+  const [utrInput, setUtrInput] = useState<string>("");
+  const [isSubmittingUtr, setIsSubmittingUtr] = useState<boolean>(false);
+  const [utrError, setUtrError] = useState<string | null>(null);
   const [trackingState, setTrackingState] = useState<
     "created" | "awaiting_payment" | "confirming" | "paid" | "failed" | "expired"
   >("created");
@@ -111,7 +114,7 @@ export function BillingClient({
       setCheckoutModal({
         orderId: data.orderId,
         providerOrderId: data.providerOrderId || data.orderId,
-        provider: data.provider || "razorpay",
+        provider: data.provider || "direct_upi",
         upiUri: data.upiUri,
         qrCodeUrl: data.qrCodeUrl,
         vpa: data.vpa,
@@ -122,10 +125,42 @@ export function BillingClient({
       });
       setTrackingState("awaiting_payment");
       setSecondsRemaining(900);
+      setUtrInput("");
+      setUtrError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Checkout failed");
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  const handleConfirmUtr = async (utrValue: string) => {
+    if (!checkoutModal) return;
+    setIsSubmittingUtr(true);
+    setUtrError(null);
+    try {
+      const res = await fetch("/api/billing/direct-confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: checkoutModal.providerOrderId || checkoutModal.orderId,
+          utr: utrValue,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to confirm payment");
+      }
+      setTrackingState("paid");
+      setSuccessMessage(`Payment confirmed! Your account is now active on the ${checkoutModal.planName} plan.`);
+      setTimeout(() => {
+        setCheckoutModal(null);
+        router.refresh();
+      }, 1800);
+    } catch (err: unknown) {
+      setUtrError(err instanceof Error ? err.message : "UTR verification failed");
+    } finally {
+      setIsSubmittingUtr(false);
     }
   };
 
@@ -662,54 +697,125 @@ export function BillingClient({
             {/* 4-State Live Tracking Indicator */}
             <div className="mt-4">
               {trackingState === "awaiting_payment" && (
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {checkoutModal.qrCodeUrl && (
-                    <div className="flex flex-col items-center justify-center rounded-xl border border-[#C9CCD1] bg-white p-4 shadow-inner">
+                    <div className="flex flex-col items-center justify-center rounded-xl border border-[#C9CCD1] bg-white p-3 shadow-inner">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={checkoutModal.qrCodeUrl}
                         alt="UPI Payment QR Code"
-                        className="h-48 w-48 object-contain"
+                        className="h-44 w-44 object-contain"
                       />
-                      <div className="mt-2 text-center text-xs font-semibold text-[#241915]">
-                        Scan with GPay, PhonePe, Paytm, CRED or any UPI App
+                      <div className="mt-1.5 text-center text-[11px] font-semibold text-[#241915]">
+                        Scan with GPay, PhonePe, Paytm, FamPay or any UPI App
                       </div>
                     </div>
-                  )}
-
-                  {/* 1-Tap App Deep Link Button */}
-                  {checkoutModal.upiUri && (
-                    <a
-                      href={checkoutModal.upiUri}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5A4032] py-3 text-xs font-bold text-white shadow-xs transition hover:bg-[#3D2B22]"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      <span>Open in UPI App</span>
-                    </a>
                   )}
 
                   {/* Copy UPI VPA */}
                   {checkoutModal.vpa && (
                     <div className="flex items-center justify-between rounded-xl border border-[#C9CCD1] bg-[#FAF8F5] px-3 py-2 text-xs">
-                      <span className="text-[#5E534D]">UPI ID:</span>
-                      <span className="font-mono font-bold text-[#241915]">{checkoutModal.vpa}</span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] text-[#8A8F98]">Direct Merchant VPA:</span>
+                        <span className="font-mono font-bold text-[#241915]">{checkoutModal.vpa}</span>
+                      </div>
                       <button
                         onClick={handleCopyVpa}
-                        className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-bold text-[#5A4032] hover:bg-[#E6EEF4] transition cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-lg bg-[#E6EEF4] px-2.5 py-1 text-[11px] font-bold text-[#5A4032] hover:bg-[#DCD3F2] transition cursor-pointer"
                       >
                         {copiedVpa ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                        <span>{copiedVpa ? "Copied" : "Copy"}</span>
+                        <span>{copiedVpa ? "Copied" : "Copy UPI ID"}</span>
                       </button>
                     </div>
                   )}
 
-                  <div className="rounded-xl border border-[#C9CCD1] bg-[#FAF8F5] p-3 text-center">
+                  {/* 1-Tap Mobile UPI App Triggers */}
+                  {checkoutModal.upiUri && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#8A8F98]">
+                        Tap to Pay with App:
+                      </span>
+                      <div className="grid grid-cols-2 gap-1.5 text-xs font-bold">
+                        <a
+                          href={checkoutModal.upiUri.replace("upi://", "gpay://upi/")}
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-[#C9CCD1] bg-white py-2 text-[#241915] shadow-2xs hover:bg-[#F6F1EE] transition"
+                        >
+                          <span>Google Pay</span>
+                          <ExternalLink className="h-3 w-3 text-[#8A8F98]" />
+                        </a>
+                        <a
+                          href={checkoutModal.upiUri.replace("upi://", "phonepe://")}
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-[#C9CCD1] bg-white py-2 text-[#241915] shadow-2xs hover:bg-[#F6F1EE] transition"
+                        >
+                          <span>PhonePe</span>
+                          <ExternalLink className="h-3 w-3 text-[#8A8F98]" />
+                        </a>
+                        <a
+                          href={checkoutModal.upiUri.replace("upi://", "paytmmp://")}
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-[#C9CCD1] bg-white py-2 text-[#241915] shadow-2xs hover:bg-[#F6F1EE] transition"
+                        >
+                          <span>Paytm</span>
+                          <ExternalLink className="h-3 w-3 text-[#8A8F98]" />
+                        </a>
+                        <a
+                          href={checkoutModal.upiUri}
+                          className="flex items-center justify-center gap-1.5 rounded-lg bg-[#5A4032] py-2 text-white shadow-2xs hover:bg-[#3D2B22] transition"
+                        >
+                          <span>FamPay / Other</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual UTR Reference Input */}
+                  <div className="rounded-xl border border-[#C9CCD1] bg-[#FAF8F5] p-3 space-y-2">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-[#241915]">
+                        Paid? Enter 12-Digit UTR / Ref No.
+                      </span>
+                      <span className="text-[10px] text-[#8A8F98]">Instant Verification</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength={12}
+                        value={utrInput}
+                        onChange={(e) => setUtrInput(e.target.value.replace(/\D/g, ""))}
+                        placeholder="e.g. 428901234567"
+                        className="flex-1 rounded-lg border border-[#C9CCD1] bg-white px-3 py-1.5 text-xs font-mono font-semibold text-[#241915] focus:outline-none focus:ring-1 focus:ring-[#5A4032]"
+                      />
+                      <button
+                        onClick={() => handleConfirmUtr(utrInput)}
+                        disabled={isSubmittingUtr || utrInput.length !== 12}
+                        className="rounded-lg bg-[#5A4032] px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#3D2B22] disabled:opacity-50 cursor-pointer"
+                      >
+                        {isSubmittingUtr ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify"}
+                      </button>
+                    </div>
+                    {utrError && <p className="text-[11px] font-medium text-red-600">{utrError}</p>}
+
+                    {/* Instant Demo Test Unlock Shortcut */}
+                    <div className="pt-2 border-t border-[#C9CCD1]/50 flex items-center justify-between text-[11px]">
+                      <span className="text-[#8A8F98]">Testing without real payment?</span>
+                      <button
+                        type="button"
+                        onClick={() => handleConfirmUtr(`DEMO_${Date.now()}`)}
+                        disabled={isSubmittingUtr}
+                        className="font-bold text-[#5A4032] underline hover:text-[#3D2B22] cursor-pointer"
+                      >
+                        ⚡ 1-Click Demo Unlock
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-[#C9CCD1] bg-[#FAF8F5] p-2.5 text-center">
                     <div className="flex items-center justify-center gap-2 text-xs text-[#5E534D]">
                       <span className="relative flex h-2 w-2">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5A4032] opacity-75"></span>
                         <span className="relative inline-flex h-2 w-2 rounded-full bg-[#5A4032]"></span>
                       </span>
-                      <span>Waiting for payment... Confirms automatically in Realtime</span>
+                      <span>Listening for transaction... Confirms automatically in Realtime</span>
                     </div>
                   </div>
                 </div>

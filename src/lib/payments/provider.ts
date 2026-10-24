@@ -1,6 +1,6 @@
 /**
  * Standard Payment Gateway Provider Interface
- * All payment integrations (Razorpay, YouPI) conform to this unified abstraction.
+ * Direct Native UPI Gateway (7980398203@fam / Xenvra)
  */
 
 export interface CreateOrderOptions {
@@ -15,7 +15,7 @@ export interface CreateOrderOptions {
 
 export interface PaymentOrder {
   orderId: string;
-  provider: "razorpay" | "youpi";
+  provider: "direct_upi" | "youpi";
   providerOrderId: string;
   amountPaise: number;
   currency: string;
@@ -25,7 +25,6 @@ export interface PaymentOrder {
   vpa?: string;
   merchantName: string;
   expiresAt: string;
-  keyId?: string; // For client-side Razorpay modal initialization if used
 }
 
 export interface WebhookVerificationResult {
@@ -45,20 +44,21 @@ export interface OrderStatusResult {
 }
 
 export interface PaymentProvider {
-  name: "razorpay" | "youpi";
+  name: "direct_upi" | "youpi";
   createOrder(options: CreateOrderOptions): Promise<PaymentOrder>;
   verifyWebhook(rawBody: string, headers: Headers): Promise<WebhookVerificationResult>;
   fetchOrderStatus(orderId: string): Promise<OrderStatusResult>;
   refund?(paymentId: string, amountPaise?: number): Promise<{ success: boolean; refundId?: string; error?: string }>;
 }
 
-import { RazorpayProvider } from "./razorpay";
+import { DirectUpiProvider } from "./direct-upi";
 import { YoupiGatewayProvider } from "./youpi";
 
 export function getPaymentProvider(providerName?: string): PaymentProvider {
-  const chosen = (providerName || process.env.PAYMENT_PROVIDER || "razorpay").toLowerCase();
+  const chosen = (providerName || process.env.PAYMENT_PROVIDER || "direct_upi").toLowerCase();
+
   if (chosen === "youpi") {
     return new YoupiGatewayProvider();
   }
-  return new RazorpayProvider();
+  return new DirectUpiProvider();
 }

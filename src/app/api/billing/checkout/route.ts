@@ -97,7 +97,6 @@ export async function POST(request: Request) {
       merchantName: session.merchantName,
       amount: planRecord.price_inr,
       amountPaise,
-      keyId: session.keyId,
       expiresAt: session.expiresAt,
       plan: planRecord,
     });

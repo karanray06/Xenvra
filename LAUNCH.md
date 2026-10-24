@@ -14,15 +14,13 @@ Set the following variables in **Vercel Dashboard → Settings → Environment V
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL (`https://<ref>.supabase.co`) | Production, Preview | Public |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Public Key | Production, Preview | Public |
 | `SUPABASE_SERVICE_ROLE_KEY` | Admin Key for atomic RPCs, webhooks, crons | Production only | **Critical Secret** |
-| `PAYMENT_PROVIDER` | Selected provider (`razorpay` primary, `youpi` experimental) | Production, Preview | Config |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay Key ID (`rzp_live_...` or `rzp_test_...`) | Production, Preview | Public |
-| `RAZORPAY_KEY_SECRET` | Razorpay Secret Key for HMAC signature verification | Production only | **Critical Secret** |
-| `RAZORPAY_WEBHOOK_SECRET` | Webhook secret configured in Razorpay dashboard | Production only | **Critical Secret** |
+| `NEXT_PUBLIC_UPI_VPA` | Merchant UPI VPA (`7980398203@fam`) | Production, Preview | Public |
+| `NEXT_PUBLIC_MERCHANT_NAME` | Merchant Display Name (`Xenvra`) | Production, Preview | Public |
 | `CRON_SECRET` | Bearer token securing `/api/cron/expire` | Production only | **Critical Secret** |
 | `NEXT_PUBLIC_APP_URL` | Public application URL (`https://xenvraresume.vercel.app`) | Production, Preview | Public |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL for distributed rate limiting | Production only | **Secret** |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST Token | Production only | **Secret** |
-| `OPENAI_API_KEY` | Optional: LLM provider key for AI writing features | Production only | **Secret** |
+| `GROQ_API_KEY` | Groq fast inference key for AI writing | Production only | **Secret** |
 
 ---
 
@@ -49,23 +47,15 @@ Execute the migrations in numerical order in **Supabase Dashboard → SQL Editor
 
 ## 3. Payment Gateway Configuration
 
-### Primary Gateway: Razorpay
-1. **API Keys**: In **Razorpay Dashboard → Settings → API Keys**, generate Live Keys upon KYC approval.
-2. **Webhooks Setup**:
-   - URL: `https://xenvraresume.vercel.app/api/billing/webhook/razorpay`
-   - Secret: Set secure random string matching `RAZORPAY_WEBHOOK_SECRET`.
-   - Subscribed Events:
-     - `payment.captured`
-     - `order.paid`
-     - `payment.failed`
-     - `refund.processed`
-3. **Receipts**: Automatic printable receipts generated client-side from verified order records.
-
-### Experimental Gateway: YouPI-PG (Off by Default)
-- Enable only if `PAYMENT_PROVIDER=youpi` is explicitly set.
-- Requires dedicated business VPA with unique timestamped amounts (e.g. ₹49.07).
-- Replay protection enforces strict 5-minute clock skew limits and timing-safe HMAC checks.
-- Any mismatched amount triggers `needs_review` status without granting automatic entitlement.
+### Direct Native UPI Gateway (0% Fee, Instant Settlement)
+- **Merchant VPA**: `7980398203@fam`
+- **Merchant Name**: `Xenvra`
+- **Supported Payment Apps**: Google Pay, PhonePe, Paytm, FamPay, CRED, and any NPCI UPI app via dynamic QR code.
+- **Verification & Activation**:
+  - Direct 12-digit UTR confirmation via `/api/billing/direct-confirm` calling atomic `fulfil_payment` RPC.
+  - Fraud prevention checks prevent UTR reuse across orders.
+  - Built-in 1-Click Demo Unlock token (`DEMO_...`) for staging verification.
+  - Printable client-side official receipts with transaction details and timestamp.
 
 ---
 

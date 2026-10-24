@@ -13,13 +13,10 @@ This runbook guides on-call engineers managing the production infrastructure of 
 4. Redeploy the latest production deployment to propagate the new environment variable.
 5. In Supabase Dashboard, delete the old service role key after 5 minutes of verification.
 
-### Razorpay Webhook Secret & Key Secret
-1. In **Razorpay Dashboard → Settings → Webhooks**, edit the webhook URL:
-   - Generate a new 32+ character random alphanumeric secret.
-2. In **Vercel Dashboard**, update `RAZORPAY_WEBHOOK_SECRET` and trigger redeploy.
-3. If rotating `RAZORPAY_KEY_SECRET`:
-   - Generate a new key in **Razorpay → Settings → API Keys**.
-   - Update `RAZORPAY_KEY_SECRET` and `NEXT_PUBLIC_RAZORPAY_KEY_ID` simultaneously in Vercel.
+### Direct UPI VPA & Merchant Name
+1. If changing merchant VPA or merchant name:
+   - Update `NEXT_PUBLIC_UPI_VPA` (e.g. `7980398203@fam`) and `NEXT_PUBLIC_MERCHANT_NAME` (`Xenvra`) in **Vercel Dashboard**.
+   - Trigger a redeploy to publish the updated dynamic QR code generator.
 
 ### CRON_SECRET
 1. Generate a new high-entropy string: `openssl rand -hex 32`.
@@ -36,44 +33,31 @@ This runbook guides on-call engineers managing the production infrastructure of 
 All payments are made as 30-day non-renewing passes. When an authorized refund request is received at `xenvra.official@gmail.com`:
 
 1. **Locate Payment Record**:
-   - In Supabase Dashboard → Table Editor → `payments`, search by `provider_payment_id` or user email.
-2. **Execute Gateway Refund**:
-   - In Razorpay Dashboard → **Payments**, search the payment ID.
-   - Click **Issue Refund** (Full or Partial amount).
-3. **Webhook Automatic Reconciliation**:
-   - Razorpay emits a `refund.processed` webhook event to `/api/billing/webhook/razorpay`.
-   - The route validates HMAC signatures and marks the payment status as `refunded`.
-4. **Manual Status Override (if needed)**:
+   - In Supabase Dashboard → Table Editor → `payments`, search by `provider_payment_id` (UTR) or user email.
+2. **Execute UPI Refund**:
+   - Use your UPI application (FamPay, Google Pay, PhonePe) to refund the ₹29 or ₹49 directly to the payer's VPA.
+3. **Database Status Override**:
    ```sql
    UPDATE payments
    SET status = 'refunded',
-       raw_event = jsonb_set(coalesce(raw_event, '{}'::jsonb), '{refund_note}', '"Manual refund processed"')
-   WHERE provider_payment_id = 'pay_...';
+       raw_event = jsonb_set(coalesce(raw_event, '{}'::jsonb), '{refund_note}', '"Manual UPI refund processed"')
+   WHERE provider_payment_id = '<UTR_NUMBER>';
    ```
 
 ---
 
 ## 3. Incident Response Playbooks
 
-### Incident A: Sudden Spike in Failed Webhooks (400/401)
-- **Symptom**: Razorpay webhook delivery fails with `Invalid HMAC signature` or `Stale timestamp`.
-- **Cause**: Clock drift between servers (> 5 minutes skew) or mismatched `RAZORPAY_WEBHOOK_SECRET`.
-- **Resolution**:
-  1. Inspect Vercel runtime logs for `[Security] Webhook rejected: ...`.
-  2. Verify that the webhook secret in Razorpay exactly matches `RAZORPAY_WEBHOOK_SECRET` without whitespace.
-  3. Verify NTP server synchronization if using an external gateway host.
-
-### Incident B: User Reports Paid but Plan Not Unlocked
+### Incident A: User Reports Paid via UPI but Plan Not Unlocked
 - **Resolution**:
   1. Have user visit **Settings → Plan & Billing** (`/dashboard/settings#billing`).
-  2. The page initiates an automatic fallback sync with `/api/billing/status?order_id=...`.
-  3. If payment row is in `needs_review` or `awaiting_payment`, verify whether bank settlement was received.
-  4. To manually fulfill:
+  2. The user can simply enter their 12-digit UPI Reference Number / UTR in the checkout modal to trigger `/api/billing/direct-confirm`.
+  3. If manual fulfillment is needed by an administrator in Supabase SQL editor:
      ```sql
      SELECT fulfil_payment(
-       p_provider => 'razorpay',
+       p_provider => 'direct_upi',
        p_order_id => '<order_id>',
-       p_payment_id => '<payment_id>',
+       p_payment_id => '<12_digit_utr>',
        p_amount_paise => 4900,
        p_raw => '{"manual_override": true, "admin": "karan"}'::jsonb
      );

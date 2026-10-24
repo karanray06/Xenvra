@@ -16,8 +16,6 @@ const envSchema = z.object({
   NEXT_PUBLIC_YOUPI_MERCHANT_NAME: z.string().optional(),
   YOUPI_API_URL: z.string().optional(),
   YOUPI_MERCHANT_ID: z.string().optional(),
-  YOUPI_WEBHOOK_SECRET: z.string().optional(),
-  RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   CRON_SECRET: z.string().min(1, "CRON_SECRET is required in production"),
 });
 
@@ -39,7 +37,6 @@ export function validateEnv() {
       YOUPI_API_URL: process.env.YOUPI_API_URL,
       YOUPI_MERCHANT_ID: process.env.YOUPI_MERCHANT_ID,
       YOUPI_WEBHOOK_SECRET: process.env.YOUPI_WEBHOOK_SECRET,
-      RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
       CRON_SECRET: process.env.CRON_SECRET,
     });
 
@@ -64,7 +61,6 @@ export function validateEnv() {
     YOUPI_API_URL: process.env.YOUPI_API_URL,
     YOUPI_MERCHANT_ID: process.env.YOUPI_MERCHANT_ID,
     YOUPI_WEBHOOK_SECRET: process.env.YOUPI_WEBHOOK_SECRET,
-    RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
   });
 

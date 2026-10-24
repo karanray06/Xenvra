@@ -24,20 +24,12 @@ export async function handleWebhookRequest(request: Request, providerParam?: str
       return NextResponse.json({ error: "Empty request body" }, { status: 400 });
     }
 
-    // 1. Signature & Timestamp Header Validation
-    let signature: string | null = null;
-    let secret = "";
-
-    if (provider === "razorpay") {
-      signature = request.headers.get("x-razorpay-signature");
-      secret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
-    } else {
-      // YouPI / generic provider
-      signature =
-        request.headers.get("x-gateway-signature") ||
-        request.headers.get("x-youpi-signature") ||
-        request.headers.get("x-signature");
-      secret = process.env.YOUPI_WEBHOOK_SECRET || "";
+    // Signature & Timestamp Header Validation
+    const signature =
+      request.headers.get("x-gateway-signature") ||
+      request.headers.get("x-youpi-signature") ||
+      request.headers.get("x-signature");
+    const secret = process.env.YOUPI_WEBHOOK_SECRET || "";
 
       // Check replay timestamp window if provided
       const timestampHeader =
@@ -52,7 +44,6 @@ export async function handleWebhookRequest(request: Request, providerParam?: str
           return NextResponse.json({ error: "Timestamp out of allowed window" }, { status: 400 });
         }
       }
-    }
 
     // MANDATORY REQUIREMENT: Must reject if signature is missing or secret is not configured
     if (!signature) {
@@ -102,26 +93,14 @@ export async function handleWebhookRequest(request: Request, providerParam?: str
     }
 
     // Extract order ID, payment reference, and amount
-    let orderId = "";
-    let paymentId = "";
+    const orderId = String(payload.orderId || payload.order_id || "");
+    let paymentId = String(payload.utr || payload.referenceId || payload.paymentId || "");
     let amountPaise: number | undefined;
 
-    if (provider === "razorpay") {
-      const pPayload = payload.payload as Record<string, unknown> | undefined;
-      const paymentEntity = (pPayload?.payment as Record<string, unknown> | undefined)?.entity as Record<string, unknown> | undefined;
-      orderId = String(paymentEntity?.order_id || "");
-      paymentId = String(paymentEntity?.id || "");
-      if (typeof paymentEntity?.amount === "number") {
-        amountPaise = paymentEntity.amount;
-      }
-    } else {
-      orderId = String(payload.orderId || payload.order_id || "");
-      paymentId = String(payload.utr || payload.referenceId || payload.paymentId || "");
-      if (typeof payload.amountPaise === "number") {
-        amountPaise = payload.amountPaise;
-      } else if (typeof payload.amount === "number") {
-        amountPaise = Math.round(payload.amount * 100);
-      }
+    if (typeof payload.amountPaise === "number") {
+      amountPaise = payload.amountPaise;
+    } else if (typeof payload.amount === "number") {
+      amountPaise = Math.round(payload.amount * 100);
     }
 
     if (!orderId) {

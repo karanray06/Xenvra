@@ -436,7 +436,7 @@ function FAQ() {
     },
     {
       q: "What payment methods do you accept?",
-      a: "We accept all major payment methods including UPI apps (Google Pay, PhonePe, Paytm, CRED), QR codes, debit/credit cards, and netbanking via Razorpay. All prices are in INR (₹). Plans are 30-day non-renewing passes.",
+      a: "We accept all major UPI apps (Google Pay, PhonePe, Paytm, FamPay, CRED) and dynamic QR codes with 0% gateway fees. All prices are in INR (₹). Plans are 30-day non-renewing passes.",
     },
     {
       q: "Can I cancel anytime?",

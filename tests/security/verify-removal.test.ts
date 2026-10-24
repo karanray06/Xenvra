@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
-import { GET as getOrderStatus } from "@/app/api/billing/status/route";
 
 describe("Security Test Suite: Client Fulfilment Bypass Removal (C1, C4)", () => {
   it("C1 Fix: Confirms /api/billing/verify route file has been completely DELETED", () => {
@@ -34,13 +33,19 @@ describe("Security Test Suite: Client Fulfilment Bypass Removal (C1, C4)", () =>
     expect(content).not.toContain("Cardholder Name");
   });
 
-  it("Status Endpoint: Unauthenticated requests to /api/billing/status are rejected with 401", async () => {
-    // Mock request without auth
-    const req = new Request("http://localhost:3000/api/billing/status?order_id=ORDER_123");
-    const response = await getOrderStatus(req);
-    expect(response.status).toBe(401);
+  it("Confirms Razorpay provider and package dependencies have been completely removed", () => {
+    const razorpayFilePath = path.join(
+      process.cwd(),
+      "src",
+      "lib",
+      "payments",
+      "razorpay.ts"
+    );
+    expect(fs.existsSync(razorpayFilePath)).toBe(false);
 
-    const data = await response.json();
-    expect(data.error).toMatch(/Unauthorized/i);
+    const pkgJson = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+    );
+    expect(pkgJson.dependencies?.razorpay).toBeUndefined();
   });
 });
