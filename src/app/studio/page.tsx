@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { StudioClient } from "@/components/studio/studio-client";
 
-export default function StudioRedirectPage() {
-  redirect("/dashboard/studio");
+export const metadata = {
+  title: "Xenvra Studio — Design Canvas",
+  description: "Next-gen design studio for career and campus presentations, resumes, and visual assets.",
+};
+
+export default function StudioCanvasPage() {
+  return <StudioClient />;
 }

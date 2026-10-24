@@ -31,16 +31,21 @@
     "@supabase/supabase-js": "^2.117.2",
     "@types/qrcode": "^1.5.6",
     "docx": "^9.14.0",
+    "dompurify": "^3.4.17",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.49.0",
     "next": "^16.4.3",
+    "pptxgenjs": "^4.0.1",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "^0.0.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.5",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -49,5 +54,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.5"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
   }
 }
