@@ -289,7 +289,7 @@ export function StudioCanvas() {
                     className="w-full h-full object-cover pointer-events-none"
                     style={{
                       borderRadius: `${el.cornerRadius || 0}px`,
-                      filter: `brightness(${el.filters.brightness}%) contrast(${el.filters.contrast}%)`,
+                      filter: `brightness(${el.filters?.brightness ?? 100}%) contrast(${el.filters?.contrast ?? 100}%)`,
                     }}
                   />
                 )}

@@ -7,11 +7,36 @@ import { StudioSidebar } from "./studio-sidebar";
 import { StudioCanvas } from "./studio-canvas";
 import { StudioPresenter } from "./studio-presenter";
 import { useStudioStore } from "@/lib/studio/store";
+import { getStudioTemplateById } from "@/lib/templates/manifest";
 
 export function StudioEditor() {
   const [isPresenting, setIsPresenting] = useState(false);
-  const { undo, redo, deleteSelectedElements, duplicateSelectedElements, clearSelection } =
-    useStudioStore();
+  const {
+    undo,
+    redo,
+    deleteSelectedElements,
+    duplicateSelectedElements,
+    clearSelection,
+    setDoc,
+    setDesignMeta,
+    setActivePage,
+  } = useStudioStore();
+
+  // Load template from URL param if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const templateId = params.get("template");
+      if (templateId) {
+        const tmpl = getStudioTemplateById(templateId);
+        if (tmpl) {
+          setDoc(tmpl.getDoc());
+          setDesignMeta(null, tmpl.title, tmpl.kind);
+          setActivePage(0);
+        }
+      }
+    }
+  }, [setDoc, setDesignMeta, setActivePage]);
 
   // Global keyboard shortcuts
   useEffect(() => {

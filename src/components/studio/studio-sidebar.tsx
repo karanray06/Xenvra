@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef } from "react";
 import { useStudioStore, type StudioPanel } from "@/lib/studio/store";
+import { ALL_STUDIO_TEMPLATES } from "@/lib/templates/manifest";
 import {
   LayoutTemplate,
   Shapes,
@@ -20,6 +21,8 @@ import {
   QrCode,
   BarChart3,
   Image as ImageIcon,
+  Search,
+  UploadCloud,
 } from "lucide-react";
 
 export function StudioSidebar() {
@@ -34,7 +37,15 @@ export function StudioSidebar() {
     duplicatePage,
     deletePage,
     updateElement,
+    setDoc,
+    setDesignMeta,
+    setSelectedElements,
+    selectedElementIds,
   } = useStudioStore();
+
+  const [templateCategory, setTemplateCategory] = useState<string>("All");
+  const [templateSearch, setTemplateSearch] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activePage = doc.pages[activePageIndex] || doc.pages[0];
 
@@ -48,6 +59,73 @@ export function StudioSidebar() {
     { id: "pages", label: "Pages", icon: FileStack },
     { id: "ats", label: "ATS Score", icon: CheckCircle2 },
   ];
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      if (!dataUrl) return;
+
+      // Check if a frame is currently selected
+      const selectedFrame = activePage.elements.find(
+        (el) => selectedElementIds.includes(el.id) && el.type === "frame"
+      );
+
+      if (selectedFrame) {
+        updateElement(selectedFrame.id, { imageSrc: dataUrl });
+      } else {
+        const img = new window.Image();
+        img.onload = () => {
+          const aspect = (img.naturalHeight || 300) / (img.naturalWidth || 400);
+          const width = 360;
+          const height = Math.round(width * aspect);
+          addElement({
+            id: `img-${Date.now()}`,
+            name: file.name.slice(0, 20),
+            type: "image",
+            x: 120,
+            y: 120,
+            width,
+            height,
+            rotation: 0,
+            opacity: 1,
+            locked: false,
+            hidden: false,
+            zIndex: activePage.elements.length + 1,
+            src: dataUrl,
+          });
+        };
+        img.src = dataUrl;
+      }
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const categories = [
+    "All",
+    "Presentations",
+    "Resumes",
+    "LinkedIn Banners",
+    "Certificates",
+    "Business Cards",
+    "Cover Letters",
+  ];
+
+  const filteredTemplates = ALL_STUDIO_TEMPLATES.filter((t) => {
+    if (templateCategory !== "All" && t.category !== templateCategory) return false;
+    if (templateSearch.trim()) {
+      const query = templateSearch.toLowerCase();
+      const matchTitle = t.title.toLowerCase().includes(query);
+      const matchDesc = t.description.toLowerCase().includes(query);
+      const matchTag = t.tags.some((tag) => tag.toLowerCase().includes(query));
+      if (!matchTitle && !matchDesc && !matchTag) return false;
+    }
+    return true;
+  });
 
   return (
     <aside className="flex h-full border-r border-[#C9CCD1] bg-white z-30 select-none">
@@ -88,6 +166,93 @@ export function StudioSidebar() {
               Close
             </button>
           </div>
+
+          {/* Panel: Templates */}
+          {activePanel === "templates" && (
+            <div className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8A8F98]" />
+                <input
+                  type="text"
+                  placeholder="Search 36+ templates..."
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[#C9CCD1] bg-white placeholder-[#8A8F98] focus:outline-none focus:border-[#5A4032]"
+                />
+              </div>
+
+              {/* Category Pills */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setTemplateCategory(cat)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors ${
+                      templateCategory === cat
+                        ? "bg-[#5A4032] text-white"
+                        : "bg-[#F5F9FB] border border-[#C9CCD1] text-[#5E534D] hover:bg-[#E6EEF4]"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Templates List */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-bold text-[#8A8F98] uppercase tracking-wider">
+                  {filteredTemplates.length} Templates Available
+                </p>
+
+                {filteredTemplates.map((t) => (
+                  <div
+                    key={t.id}
+                    onClick={() => {
+                      const newDoc = t.getDoc();
+                      setDoc(newDoc);
+                      setDesignMeta(null, t.title, t.kind);
+                      setActivePage(0);
+                      setSelectedElements([]);
+                    }}
+                    className="group p-2.5 rounded-xl border border-[#C9CCD1] hover:border-[#5A4032] bg-[#FAF8F5] hover:bg-white cursor-pointer transition-all shadow-xs"
+                  >
+                    {/* Visual Card Preview */}
+                    <div className="relative w-full h-24 mb-2 rounded-lg bg-[#E6EEF4] border border-[#C9CCD1] overflow-hidden flex flex-col items-center justify-center p-2 group-hover:border-[#5A4032]/40">
+                      <div className="w-12 h-8 rounded bg-white/80 border border-[#C9CCD1] flex items-center justify-center text-[8px] font-bold text-[#5A4032] shadow-2xs">
+                        {t.aspect}
+                      </div>
+                      <span className="text-[9px] font-medium text-[#5E534D] mt-1 text-center line-clamp-1">
+                        {t.title}
+                      </span>
+
+                      {/* Tier Badge */}
+                      <span
+                        className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                          t.free
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-[#DCD3F2] text-[#5A4032]"
+                        }`}
+                      >
+                        {t.free ? "Free" : "Pro"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-1">
+                      <div>
+                        <p className="text-xs font-bold text-[#241915] group-hover:text-[#5A4032] line-clamp-1">
+                          {t.title}
+                        </p>
+                        <p className="text-[10px] text-[#5E534D] line-clamp-1 mt-0.5">
+                          {t.category} · {t.dimensions.width}×{t.dimensions.height}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Panel: Elements */}
           {activePanel === "elements" && (
@@ -434,6 +599,39 @@ export function StudioSidebar() {
                 <p className="text-sm font-normal text-[#241915]">Add Body Text</p>
                 <p className="text-[10px] text-[#8A8F98]">16pt · Inter</p>
               </button>
+            </div>
+          )}
+
+          {/* Panel: Uploads */}
+          {activePanel === "uploads" && (
+            <div className="space-y-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full py-6 border-2 border-dashed border-[#5A4032] rounded-xl bg-[#F6F1EE] hover:bg-[#E6EEF4] flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-full bg-white border border-[#C9CCD1] flex items-center justify-center text-[#5A4032] shadow-xs">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-[#241915]">Upload an Image</p>
+                  <p className="text-[10px] text-[#5E534D] mt-0.5">
+                    PNG, JPG, SVG or WebP up to 5MB
+                  </p>
+                </div>
+              </button>
+
+              <div className="p-3 rounded-lg bg-[#E6EEF4]/60 border border-[#C9CCD1] text-[11px] text-[#5E534D] leading-relaxed">
+                <p className="font-bold text-[#241915] mb-1">Photo Frames Tip</p>
+                Select any photo frame on your canvas, then upload or drop an image to automatically fill the frame with perfect centering.
+              </div>
             </div>
           )}
 

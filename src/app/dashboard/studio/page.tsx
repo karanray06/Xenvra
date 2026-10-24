@@ -23,6 +23,7 @@ export const metadata = {
 const STUDIO_PRESETS = [
   {
     id: "preset-pitch-deck",
+    templateId: "deck-startup-pitch",
     title: "Startup Pitch Deck (16:9)",
     desc: "1920x1080 10-slide anatomy: Problem, Solution, Market, Traction, Team & Roadmap.",
     badge: "Presentation",
@@ -31,6 +32,7 @@ const STUDIO_PRESETS = [
   },
   {
     id: "preset-resume-ats",
+    templateId: "resume-ats-1",
     title: "ATS-Safe Executive Resume",
     desc: "Clean A4 format with verified vector text embedding, typographic hierarchy, and photo frame.",
     badge: "Resume",
@@ -39,6 +41,7 @@ const STUDIO_PRESETS = [
   },
   {
     id: "preset-college-viva",
+    templateId: "deck-college-viva",
     title: "College Project / Viva Deck",
     desc: "Structured project defense slides with architecture diagrams, results, and team credits.",
     badge: "Campus",
@@ -47,6 +50,7 @@ const STUDIO_PRESETS = [
   },
   {
     id: "preset-linkedin-banner",
+    templateId: "banner-software-engineer",
     title: "LinkedIn Profile Banner",
     desc: "1584x396 pixel-perfect canvas tailored to professional branding and contact callouts.",
     badge: "Social",
@@ -110,7 +114,7 @@ export default async function StudioPage() {
             return (
               <Link
                 key={p.id}
-                href="/studio"
+                href={p.templateId ? `/studio?template=${p.templateId}` : "/studio"}
                 className={`group flex flex-col justify-between rounded-2xl border border-border ${p.bg} p-5 transition-all hover:border-accent hover:shadow-md`}
               >
                 <div>

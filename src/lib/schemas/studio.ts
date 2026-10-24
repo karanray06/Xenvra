@@ -117,15 +117,16 @@ export const textElementSchema = baseElementSchema.extend({
   fontSize: z.number().min(6).max(200).default(24),
   fontFamily: z.string().default("Plus Jakarta Sans"),
   fontWeight: z.union([z.number(), z.string()]).default(400),
-  fontStyle: z.enum(["normal", "italic"]).default("normal"),
+  fontStyle: z.enum(["normal", "italic"]).optional(),
   color: z.string().default("#241915"),
-  align: z.enum(["left", "center", "right", "justify"]).default("left"),
-  lineHeight: z.number().min(0.5).max(3).default(1.4),
-  letterSpacing: z.number().min(-5).max(20).default(0),
+  align: z.enum(["left", "center", "right", "justify"]).optional(),
+  lineHeight: z.number().min(0.5).max(3).optional(),
+  letterSpacing: z.number().min(-5).max(20).optional(),
   underline: z.boolean().optional(),
   uppercase: z.boolean().optional(),
   // Data-binding to structured resume/profile field e.g. "contact.fullName"
   dataBinding: z.string().optional(),
+  bind: z.string().optional(),
 });
 
 // 2. Shape Element
@@ -144,8 +145,8 @@ export const shapeElementSchema = baseElementSchema.extend({
 export const imageElementSchema = baseElementSchema.extend({
   type: z.literal("image"),
   src: z.string().min(1),
-  alt: z.string().default("Image"),
-  cornerRadius: z.number().min(0).max(200).default(0),
+  alt: z.string().optional(),
+  cornerRadius: z.number().min(0).max(200).optional(),
   filters: z
     .object({
       brightness: z.number().default(100),
@@ -154,12 +155,7 @@ export const imageElementSchema = baseElementSchema.extend({
       blur: z.number().default(0),
       duotone: z.string().optional(),
     })
-    .default({
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      blur: 0,
-    }),
+    .optional(),
 });
 
 // 4. Photo Frame Element ("Add photo" placeholder and mask container)
@@ -168,11 +164,11 @@ export const frameElementSchema = baseElementSchema.extend({
   frameShape: z.enum(["circle", "rounded", "blob", "arch", "polaroid", "device"]).default("circle"),
   imageSrc: z.string().optional(),
   placeholderText: z.string().default("Drop or Click to Add Photo"),
-  zoom: z.number().min(0.1).max(5).default(1),
-  cropX: z.number().default(0),
-  cropY: z.number().default(0),
-  borderColor: z.string().default("#C9CCD1"),
-  borderWidth: z.number().default(2),
+  zoom: z.number().min(0.1).max(5).optional(),
+  cropX: z.number().optional(),
+  cropY: z.number().optional(),
+  borderColor: z.string().optional(),
+  borderWidth: z.number().optional(),
 });
 
 // 5. Icon Element (Lucide Icon name and stroke)
