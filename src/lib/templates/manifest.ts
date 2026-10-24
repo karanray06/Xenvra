@@ -386,7 +386,7 @@ const RESUME_MANIFEST: TemplateManifestItem[] = RESUME_TEMPLATES.slice(0, 10).ma
   free: t.free,
   atsSafe: t.atsSafe ?? true,
   description: t.description,
-  seoDescription: `${t.name} - ATS-optimized resume template built in Xenvra brand colors. 100% extractable vector text layer ensures top scoring on recruitment screening systems.`,
+  seoDescription: `${t.name} - Professional resume template built in Xenvra brand colors. Selectable vector text layers formatted for standard Applicant Tracking Systems.`,
   getDoc: () => buildResumeStudioDoc(t.id, t.name, !t.free),
 }));
 
@@ -397,7 +397,22 @@ export const ALL_STUDIO_TEMPLATES: TemplateManifestItem[] = [
 ];
 
 export function getStudioTemplateById(id: string): TemplateManifestItem | undefined {
-  return ALL_STUDIO_TEMPLATES.find((t) => t.id === id || t.slug === id);
+  if (!id) return undefined;
+  const normalized = id.toLowerCase().trim();
+  return ALL_STUDIO_TEMPLATES.find((t) => {
+    const tId = t.id.toLowerCase();
+    const tSlug = t.slug.toLowerCase();
+    return (
+      tId === normalized ||
+      tSlug === normalized ||
+      tId === `resume-${normalized}` ||
+      tId === `deck-${normalized}` ||
+      tId.replace("resume-", "") === normalized ||
+      tId.replace("deck-", "") === normalized ||
+      tSlug.replace("-deck", "") === normalized ||
+      tSlug.replace("-presentation", "") === normalized
+    );
+  });
 }
 
 export function getStudioTemplatesByKind(kind: StudioKind): TemplateManifestItem[] {

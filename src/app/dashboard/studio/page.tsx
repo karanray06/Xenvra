@@ -8,8 +8,6 @@ import {
   ArrowRight,
   ShieldCheck,
   FileCode,
-  Eye,
-  CheckCircle2,
   Presentation,
   FileText,
   CreditCard,
@@ -52,7 +50,7 @@ const STUDIO_PRESETS = [
     id: "preset-linkedin-banner",
     templateId: "banner-software-engineer",
     title: "LinkedIn Profile Banner",
-    desc: "1584x396 pixel-perfect canvas tailored to professional branding and contact callouts.",
+    desc: "1584x396 dedicated standard canvas tailored to professional branding and contact callouts.",
     badge: "Social",
     icon: CreditCard,
     bg: "bg-surface-secondary",
@@ -66,13 +64,13 @@ export default async function StudioPage() {
   const { user } = context;
   const supabase = await createClient();
 
-  // Fetch recent documents & designs
-  const { data: resumes } = await supabase
-    .from("resumes")
-    .select("id, title, template_id, design_json, updated_at")
+  // Fetch recent studio designs
+  const { data: designs } = await supabase
+    .from("designs")
+    .select("id, title, kind, version, created_at, updated_at")
     .eq("user_id", user.id)
     .order("updated_at", { ascending: false })
-    .limit(8);
+    .limit(12);
 
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8 space-y-8 animate-fade-in">
@@ -146,53 +144,40 @@ export default async function StudioPage() {
       <div className="space-y-4 pt-4">
         <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider flex items-center gap-2">
           <FileCode className="h-4 w-4 text-accent" />
-          Saved Studio Documents ({resumes?.length || 0})
+          Saved Studio Documents ({designs?.length || 0})
         </h2>
 
-        {resumes && resumes.length > 0 ? (
+        {designs && designs.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {resumes.map((r) => (
+            {designs.map((d) => (
               <div
-                key={r.id}
+                key={d.id}
                 className="flex flex-col justify-between rounded-2xl border border-border bg-surface p-5 shadow-xs transition-all hover:border-accent/40 hover:shadow-sm"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-mono text-text-tertiary">
-                      {new Date(r.updated_at).toLocaleDateString("en-IN", {
+                      {new Date(d.updated_at).toLocaleDateString("en-IN", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </span>
-                    {r.design_json ? (
-                      <span className="rounded-full bg-success-light px-2 py-0.5 text-[10px] font-bold text-success flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Studio Doc
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
-                        Document
-                      </span>
-                    )}
+                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-accent uppercase">
+                      {d.kind}
+                    </span>
                   </div>
 
-                  <h3 className="font-bold text-text-primary text-sm">{r.title}</h3>
-                  <p className="text-xs text-text-secondary mt-0.5">Template: {r.template_id}</p>
+                  <h3 className="font-bold text-text-primary text-sm line-clamp-1">{d.title}</h3>
+                  <p className="text-xs text-text-secondary mt-0.5">Version {d.version}</p>
                 </div>
 
                 <div className="mt-5 pt-3 border-t border-border flex items-center justify-between">
                   <Link
-                    href={`/studio?id=${r.id}`}
+                    href={`/studio?id=${d.id}`}
                     className="flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
                   >
                     <span>Open in Studio →</span>
-                  </Link>
-                  <Link
-                    href={`/print/${r.id}`}
-                    target="_blank"
-                    className="flex items-center gap-1 text-[11px] text-text-tertiary hover:text-text-primary"
-                  >
-                    <Eye className="h-3 w-3" /> Preview
                   </Link>
                 </div>
               </div>

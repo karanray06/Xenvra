@@ -48,7 +48,7 @@ export default async function TemplatesPage(props: {
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className="flex items-center gap-1 rounded-full bg-[#E6EEF4] px-2.5 py-0.5 text-[11px] font-bold text-[#5A4032]">
-              <Sparkles className="h-3 w-3" /> Canva-Grade Originals
+              <Sparkles className="h-3 w-3" /> Studio Originals
             </span>
             <span className="text-xs font-semibold text-[#8A8F98]">
               · {ALL_STUDIO_TEMPLATES.length} Total Templates

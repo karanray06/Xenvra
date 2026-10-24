@@ -54,7 +54,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "2. The Vector ATS Advantage: Why Layout Choice Matters",
         body: [
           "A widespread myth among Indian job seekers is that you must use an unstyled 1995 Times New Roman Word document to pass ATS filters. This is untrue. Modern parsers handle dual-column layouts and styled typography effortlessly — provided the underlying PDF stream contains true selectable vector text.",
-          "When you export from Xenvra Studio, text elements are compiled directly into native PDF stream operands rather than flattened raster images. You achieve the visual prestige of a Canva-grade design while retaining 100% computational readability for recruitment software.",
+          "When you export from Xenvra Studio, text elements are compiled directly into native PDF stream operands rather than flattened raster images. You achieve the visual polish of a modern design while retaining clean computational readability for recruitment software.",
         ],
       },
       {

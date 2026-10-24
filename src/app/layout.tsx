@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(getAppBaseUrl()),
   title: "Xenvra Studio — Design Resumes, Decks & More — In Minutes",
   description:
-    "Your career, beautifully designed. Ready-made templates for resumes, pitch decks, college vivas, and LinkedIn banners with ATS scoring and AI superpowers.",
+    "Your career, beautifully designed. Ready-made templates for resumes, pitch decks, college vivas, and LinkedIn banners with ATS guidance and career profile sync.",
   keywords: [
     "design studio",
     "resume builder",

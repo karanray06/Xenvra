@@ -25,8 +25,10 @@ export function TemplateRenderer({
   accentColor,
   fontFamily,
 }: TemplateRendererProps) {
+  const normalizedId = templateId ? templateId.replace(/^resume-/, "") : "modern-1";
+
   // 1. Support 10 core in-palette templates
-  switch (templateId) {
+  switch (normalizedId) {
     case "modern-1":
       return <ModernClassic data={data} accentColor={accentColor} />;
     case "minimal-1":
@@ -49,7 +51,7 @@ export function TemplateRenderer({
       return <AcademicCV data={data} accentColor={accentColor} fontFamily={fontFamily} />;
     default: {
       // 2. Data-driven TemplateSpec renderer (All 24 Canva-parity templates)
-      const spec = getTemplateSpecById(templateId);
+      const spec = getTemplateSpecById(normalizedId);
       return (
         <UniversalRenderer
           data={data}

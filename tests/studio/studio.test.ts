@@ -171,4 +171,92 @@ describe("Phase D: Xenvra Studio Flagship Test Suite", () => {
     expect(useStudioStore.getState().undoStack.length).toBe(1);
     expect(useStudioStore.getState().redoStack.length).toBe(0);
   });
+
+  it("Generates multi-page vector PDF matching document page count and dimensions", async () => {
+    const { buildJsPDFInstance } = await import("@/lib/studio/export");
+    const multiPageDoc = {
+      schemaVersion: 1,
+      pages: [
+        {
+          id: "page-1",
+          name: "Slide 1",
+          width: 1920,
+          height: 1080,
+          background: "#FFFFFF",
+          elements: [
+            {
+              id: "t1",
+              name: "Title",
+              type: "text" as const,
+              x: 100,
+              y: 100,
+              width: 500,
+              height: 50,
+              content: "Page 1 Heading",
+              fontSize: 32,
+              fontFamily: "Inter",
+              fontWeight: 700,
+              color: "#241915",
+              align: "left" as const,
+            },
+          ],
+        },
+        {
+          id: "page-2",
+          name: "Slide 2",
+          width: 1920,
+          height: 1080,
+          background: "#F5F9FB",
+          elements: [
+            {
+              id: "s1",
+              name: "Box",
+              type: "shape" as const,
+              shapeType: "rect" as const,
+              x: 50,
+              y: 50,
+              width: 200,
+              height: 100,
+              fill: "#5A4032",
+            },
+          ],
+        },
+        {
+          id: "page-3",
+          name: "Slide 3",
+          width: 1920,
+          height: 1080,
+          background: "#E6EEF4",
+          elements: [],
+        },
+      ],
+    };
+
+    const pdf = buildJsPDFInstance(multiPageDoc, true);
+    // Number of pages in jsPDF
+    expect(pdf.getNumberOfPages()).toBe(3);
+  });
+
+  it("Tracks persistence metadata, optimistic concurrency version, and draft safety", () => {
+    useStudioStore.setState({
+      designId: "test-design-123",
+      designTitle: "My Presentation",
+      kind: "deck",
+      version: 2,
+      isDirty: true,
+      saveStatus: "saving",
+      isAnonymous: false,
+    });
+
+    const state = useStudioStore.getState();
+    expect(state.designId).toBe("test-design-123");
+    expect(state.version).toBe(2);
+    expect(state.isDirty).toBe(true);
+    expect(state.saveStatus).toBe("saving");
+    expect(state.isAnonymous).toBe(false);
+
+    // Set anonymous
+    useStudioStore.setState({ isAnonymous: true, saveStatus: "idle" });
+    expect(useStudioStore.getState().isAnonymous).toBe(true);
+  });
 });

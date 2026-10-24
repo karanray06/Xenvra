@@ -19,11 +19,11 @@ export function PublicFooter() {
               <span className="text-lg font-bold text-[#241915]">Xenvra Studio</span>
             </Link>
             <p className="text-xs text-[#5E534D] leading-relaxed">
-              Canva-grade design studio for career and campus documents. Resumes, 10-slide pitch decks, viva presentations, certificates, and LinkedIn banners.
+              Modern design studio for career and campus documents. Resumes, 10-slide pitch decks, viva presentations, certificates, and LinkedIn banners.
             </p>
             <div className="flex items-center gap-2 text-xs font-semibold text-[#5A4032]">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              100% Vector ATS Export & PPTX Native
+              Vector ATS-Readable Export & Native PPTX
             </div>
           </div>
 
@@ -32,7 +32,7 @@ export function PublicFooter() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#241915]">Templates</h4>
             <ul className="space-y-2 text-xs text-[#5E534D]">
               <li>
-                <Link href="/templates/presentation" className="hover:text-[#5A4032] transition-colors">
+                <Link href="/templates/deck" className="hover:text-[#5A4032] transition-colors">
                   Pitch & Viva Decks (10)
                 </Link>
               </li>

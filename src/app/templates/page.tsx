@@ -19,20 +19,20 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Free Resume & Presentation Templates (Canva-Grade) — Xenvra Studio",
+  title: "Ready-Made Resume & Presentation Templates — Xenvra Studio",
   description:
-    "Explore 36+ professionally engineered templates: 10-slide pitch decks, college vivas, 100% ATS-friendly resumes, LinkedIn banners, and certificates. Vector ATS and PPTX export.",
+    "Explore 36+ professionally engineered templates: 10-slide pitch decks, college vivas, ATS-oriented resumes, LinkedIn banners, and certificates. Vector and PPTX export.",
   alternates: {
     canonical: `${getAppBaseUrl()}/templates`,
   },
   openGraph: {
-    title: "Free Resume & Presentation Templates — Xenvra Studio",
+    title: "Ready-Made Resume & Presentation Templates — Xenvra Studio",
     description:
       "Explore 36+ professionally engineered templates: 10-slide pitch decks, college vivas, ATS resumes, and banners.",
     url: `${getAppBaseUrl()}/templates`,
     images: [
       {
-        url: `/api/og?title=${encodeURIComponent("Free Resume & Presentation Templates")}&kind=Templates&badge=${encodeURIComponent("36+ Canva-Grade Originals")}`,
+        url: `/api/og?title=${encodeURIComponent("Ready-Made Resume & Presentation Templates")}&kind=Templates&badge=${encodeURIComponent("36+ Studio Originals")}`,
         width: 1200,
         height: 630,
         alt: "Xenvra Studio Template Library",
@@ -160,7 +160,7 @@ export default async function PublicTemplatesPage(props: {
           <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8 text-center relative z-10">
             <div className="inline-flex items-center gap-2 rounded-full bg-[#DCD3F2] px-3.5 py-1 text-xs font-bold text-[#5A4032] mb-5 shadow-2xs">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>36+ Canva-Grade Original Templates</span>
+              <span>36+ Ready-to-Use Studio Templates</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-[#241915] max-w-4xl mx-auto leading-tight">
               Design Resumes, Decks & Career Assets —{" "}

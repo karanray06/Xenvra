@@ -13,7 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { StartInspiredSection } from "@/components/home/start-inspired-section";
-import { CanvaFeaturesSection } from "@/components/home/canva-features-section";
+import { XenvraFeaturesSection } from "@/components/home/features-section";
 import { getAppBaseUrl } from "@/lib/env";
 
 // ===== Navbar =====
@@ -180,7 +180,7 @@ function Features() {
       icon: Download,
       title: "PDF Export",
       description:
-        "Export pixel-perfect PDFs that look exactly like the preview. Your resume is ready to send to employers.",
+        "Export high-fidelity vector PDFs that match your editor preview. Your resume is ready to send to employers.",
     },
     {
       icon: Zap,
@@ -192,7 +192,7 @@ function Features() {
 
   return (
     <section
-      id="features"
+      id="overview"
       className="bg-surface-secondary py-20 sm:py-28"
     >
       <div className="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
@@ -201,8 +201,7 @@ function Features() {
             Everything you need to land the job
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-text-secondary">
-            Powerful tools to help you create a standout resume, backed by real
-            AI — not smoke and mirrors.
+            Purpose-built tools to help you design structured resumes, presentation decks, and visual career assets.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -632,7 +631,7 @@ export default function LandingPage() {
         <Hero />
         <Features />
         <StartInspiredSection />
-        <CanvaFeaturesSection />
+        <XenvraFeaturesSection />
         <HowItWorks />
         <PricingPreview />
         <FAQ />

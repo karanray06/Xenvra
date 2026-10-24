@@ -1140,7 +1140,8 @@ export const TEMPLATE_LIBRARY: TemplateSpec[] = [
 ];
 
 export function getTemplateSpecById(id: string): TemplateSpec {
-  const found = TEMPLATE_LIBRARY.find((t) => t.id === id);
+  const norm = (id || "").toLowerCase().replace(/^resume-/, "");
+  const found = TEMPLATE_LIBRARY.find((t) => t.id === id || t.id.toLowerCase() === norm);
   if (found) return found;
   // Fallback to modern-classic if id not found or legacy
   return TEMPLATE_LIBRARY[0];

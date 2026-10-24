@@ -116,7 +116,7 @@ export async function exportDocumentToPPTX(doc: StudioDocument, filename = "pres
     }
 
     for (const el of page.elements) {
-      if (el.hidden) return;
+      if (el.hidden) continue;
 
       // Coordinate scaling from 1920x1080 px to PPTX 10x5.625 inches
       const scaleX = 10 / page.width;
@@ -187,8 +187,9 @@ export function buildJsPDFInstance(doc: StudioDocument, isPro = true) {
 
   for (let i = 0; i < doc.pages.length; i++) {
     const page = doc.pages[i];
+    const pageIsLandscape = page.width > page.height;
     if (i > 0) {
-      pdf.addPage([page.width * 0.75, page.height * 0.75], isLandscape ? "landscape" : "portrait");
+      pdf.addPage([page.width * 0.75, page.height * 0.75], pageIsLandscape ? "landscape" : "portrait");
     }
 
     const ptScale = 0.75;

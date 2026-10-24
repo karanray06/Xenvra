@@ -23,7 +23,7 @@ export interface TemplateProps {
 const CORE_TEMPLATES: TemplateInfo[] = [
   { id: "modern-1", name: "Modern Classic", category: "modern", description: "Clean two-column layout with Mocha Brown accent", free: true, tier: "free", atsSafe: true, tags: ["trending", "modern", "brand"] },
   { id: "minimal-1", name: "Minimalist", category: "minimal", description: "Simple single-column with elegant typography", free: true, tier: "free", atsSafe: true, tags: ["minimalist", "simple", "professional"] },
-  { id: "ats-1", name: "ATS Optimized", category: "ats", description: "Clean text-only layout that passes every ATS check", free: true, tier: "free", atsSafe: true, tags: ["simple", "ats", "corporate"] },
+  { id: "ats-1", name: "ATS Optimized", category: "ats", description: "Clean single-column layout designed for standard ATS text parsing", free: true, tier: "free", atsSafe: true, tags: ["simple", "ats", "corporate"] },
   { id: "professional-1", name: "Executive", category: "professional", description: "Traditional corporate-style layout in Mocha & Charcoal", free: false, tier: "pro", atsSafe: true, tags: ["corporate", "executive", "professional"] },
   { id: "modern-2", name: "Gradient Edge", category: "modern", description: "Subtle brand lavender-to-mocha edge accent", free: false, tier: "pro", atsSafe: true, tags: ["modern", "gradient", "brand"] },
   { id: "two-column-slate", name: "Two-Column Slate", category: "modern", description: "Structured two-column layout in Ice Silver & Mocha", free: true, tier: "free", atsSafe: true, tags: ["two-column", "ice", "structured"] },
@@ -49,7 +49,14 @@ const SPEC_TEMPLATES: TemplateInfo[] = TEMPLATE_LIBRARY.map((spec) => ({
 export const TEMPLATES: TemplateInfo[] = [...CORE_TEMPLATES, ...SPEC_TEMPLATES];
 
 export function getTemplateById(id: string): TemplateInfo | undefined {
-  return TEMPLATES.find((t) => t.id === id);
+  if (!id) return undefined;
+  const normalized = id.toLowerCase().trim();
+  return TEMPLATES.find(
+    (t) =>
+      t.id.toLowerCase() === normalized ||
+      t.id.toLowerCase() === `resume-${normalized}` ||
+      `resume-${t.id.toLowerCase()}` === normalized
+  );
 }
 
 export function getFreeTemplates(): TemplateInfo[] {

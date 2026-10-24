@@ -32,7 +32,7 @@ const CATEGORY_MAP: Record<string, CategoryMeta> = {
     seoDescription:
       "Explore 10-slide presentation decks for startup pitches, college vivas, marketing strategies, and hackathon demos. Native PPTX and vector PDF export.",
     badge: "10 Distinct 16:9 Decks",
-    headline: "Canva-Grade 10-Slide Presentation Decks",
+    headline: "Production-Ready 10-Slide Presentation Decks",
     subhead:
       "Pitch decks, consulting strategies, college project viva defenses, and product launches. Built with universal 10-slide anatomies, drag-and-drop photo frames, and native PowerPoint (PPTX) vector exports.",
     kindKeys: ["deck", "presentation"],
@@ -58,7 +58,7 @@ const CATEGORY_MAP: Record<string, CategoryMeta> = {
     seoDescription:
       "Explore 10-slide presentation decks for startup pitches, college vivas, marketing strategies, and hackathon demos. Native PPTX and vector PDF export.",
     badge: "10 Distinct 16:9 Decks",
-    headline: "Canva-Grade 10-Slide Presentation Decks",
+    headline: "Production-Ready 10-Slide Presentation Decks",
     subhead:
       "Pitch decks, consulting strategies, college project viva defenses, and product launches. Built with universal 10-slide anatomies, drag-and-drop photo frames, and native PowerPoint (PPTX) vector exports.",
     kindKeys: ["deck", "presentation"],

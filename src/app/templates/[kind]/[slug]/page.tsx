@@ -239,7 +239,7 @@ export default async function TemplateDetailPage(props: {
                     </span>
                     {template.atsSafe && (
                       <span className="flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                        <CheckCircle2 className="h-3 w-3" /> ATS Guaranteed
+                        <CheckCircle2 className="h-3 w-3" /> ATS-Optimized
                       </span>
                     )}
                     {!template.free && (

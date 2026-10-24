@@ -30,9 +30,10 @@ import { validateStudioDocumentATS } from "@/lib/studio/ats-validator";
 
 interface StudioTopBarProps {
   onStartPresenting: () => void;
+  onManualSave?: () => void;
 }
 
-export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
+export function StudioTopBar({ onStartPresenting, onManualSave }: StudioTopBarProps) {
   const {
     doc,
     activePageIndex,
@@ -46,6 +47,8 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
     recolourToBrand,
     magicResize,
     saveStatus,
+    isDirty,
+    isAnonymous,
   } = useStudioStore();
 
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -131,8 +134,41 @@ export function StudioTopBar({ onStartPresenting }: StudioTopBarProps) {
               Xenvra Studio
             </span>
             <div className="flex items-center gap-1.5 text-[10px] text-[#5E534D]">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>{saveStatus === "saving" ? "Saving..." : "All changes saved"}</span>
+              {saveStatus === "saving" ? (
+                <>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-blue-600 font-medium">Saving...</span>
+                </>
+              ) : saveStatus === "error" ? (
+                <button
+                  type="button"
+                  onClick={onManualSave}
+                  title="Click to retry saving"
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium underline cursor-pointer"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500" />
+                  <span>Save failed · Retry</span>
+                </button>
+              ) : isAnonymous ? (
+                <a
+                  href="/auth"
+                  title="Sign in to save design to cloud"
+                  className="flex items-center gap-1 text-amber-700 hover:text-amber-800 font-medium cursor-pointer"
+                >
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Local Draft · Sign in</span>
+                </a>
+              ) : isDirty ? (
+                <span className="flex items-center gap-1 text-amber-600 font-medium">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <span>Unsaved changes</span>
+                </span>
+              ) : (
+                <>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Saved to cloud</span>
+                </>
+              )}
             </div>
           </div>
         </div>

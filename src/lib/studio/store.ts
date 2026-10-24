@@ -34,8 +34,10 @@ export interface StudioState {
   designId: string | null;
   designTitle: string;
   kind: StudioKind;
+  version: number;
   isDirty: boolean;
   saveStatus: "idle" | "saving" | "saved" | "error";
+  isAnonymous: boolean;
 
   // Selection & Interaction
   selectedElementIds: string[];
@@ -52,7 +54,8 @@ export interface StudioState {
 
   // Actions
   setDoc: (doc: StudioDocument) => void;
-  setDesignMeta: (id: string | null, title: string, kind: StudioKind) => void;
+  setDesignMeta: (id: string | null, title: string, kind: StudioKind, version?: number) => void;
+  setIsAnonymous: (isAnonymous: boolean) => void;
   setActivePage: (index: number) => void;
   setSelectedElements: (ids: string[]) => void;
   selectElement: (id: string, multi?: boolean) => void;
@@ -230,8 +233,10 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   designId: null,
   designTitle: "Untitled Presentation",
   kind: "deck",
+  version: 1,
   isDirty: false,
   saveStatus: "saved",
+  isAnonymous: false,
 
   selectedElementIds: [],
   hoveredElementId: null,
@@ -245,7 +250,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   redoStack: [],
 
   setDoc: (doc) => set({ doc, isDirty: false }),
-  setDesignMeta: (id, title, kind) => set({ designId: id, designTitle: title, kind }),
+  setDesignMeta: (id, title, kind, version) =>
+    set((state) => ({
+      designId: id,
+      designTitle: title,
+      kind,
+      version: version ?? state.version,
+    })),
+  setIsAnonymous: (isAnonymous) => set({ isAnonymous }),
   setActivePage: (index) => set({ activePageIndex: index, selectedElementIds: [] }),
   setSelectedElements: (ids) => set({ selectedElementIds: ids }),
   selectElement: (id, multi) =>

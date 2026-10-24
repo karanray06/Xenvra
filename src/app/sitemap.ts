@@ -60,6 +60,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const categoryRoutes: MetadataRoute.Sitemap = [
     "presentation",
+    "deck",
     "resume",
     "banner",
     "certificate",

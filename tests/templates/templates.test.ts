@@ -141,5 +141,43 @@ describe("Phase E: Studio Template Library", () => {
       const resumes = getStudioTemplatesByCategory("Resumes");
       expect(resumes).toHaveLength(10);
     });
+
+    it("every single template in manifest resolves by ID and slug, generating a valid document", () => {
+      ALL_STUDIO_TEMPLATES.forEach((tmpl) => {
+        const byId = getStudioTemplateById(tmpl.id);
+        expect(byId).toBeDefined();
+        expect(byId?.id).toBe(tmpl.id);
+
+        const bySlug = getStudioTemplateById(tmpl.slug);
+        expect(bySlug).toBeDefined();
+        expect(bySlug?.id).toBe(tmpl.id);
+
+        const doc = tmpl.getDoc();
+        expect(doc.pages.length).toBeGreaterThanOrEqual(1);
+        expect(doc.pages[0].elements.length).toBeGreaterThan(0);
+        const parsed = studioDocumentSchema.safeParse(doc);
+        expect(parsed.success).toBe(true);
+      });
+    });
+
+    it("resolves all dashboard presets without drift", () => {
+      const presetIds = [
+        "deck-startup-pitch",
+        "resume-ats-1",
+        "deck-college-viva",
+        "banner-software-engineer",
+      ];
+      presetIds.forEach((id) => {
+        const tmpl = getStudioTemplateById(id);
+        expect(tmpl).toBeDefined();
+      });
+    });
+
+    it("gracefully returns undefined for unknown, empty, or malformed template IDs", () => {
+      expect(getStudioTemplateById("")).toBeUndefined();
+      expect(getStudioTemplateById("   ")).toBeUndefined();
+      expect(getStudioTemplateById("completely-nonexistent-template-id")).toBeUndefined();
+      expect(getStudioTemplateById("invalid-random-uuid-99999")).toBeUndefined();
+    });
   });
 });
