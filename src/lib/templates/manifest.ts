@@ -1,5 +1,6 @@
 import type { StudioDocument, StudioKind } from "@/lib/schemas/studio";
 import { ALL_PRESENTATION_DECKS } from "./decks/presentation-decks";
+import { ALL_BRUTALIST_DECKS } from "./decks/brutalist-pitch-decks";
 import { ALL_GRAPHIC_TEMPLATES } from "./graphics/multi-format-templates";
 import { TEMPLATES as RESUME_TEMPLATES } from "@/components/templates/registry";
 
@@ -35,6 +36,23 @@ const PRESENTATION_MANIFEST: TemplateManifestItem[] = ALL_PRESENTATION_DECKS.map
   description: deck.description,
   seoDescription: `${deck.title} - Professional 10-slide presentation template designed in Xenvra brand palette for career and campus presentations.`,
   getDoc: () => deck.getDoc("mocha"),
+}));
+
+// Convert brutalist presentation decks to manifest items
+const BRUTALIST_MANIFEST: TemplateManifestItem[] = ALL_BRUTALIST_DECKS.map((deck) => ({
+  id: deck.id,
+  slug: deck.slug,
+  title: deck.title,
+  kind: "deck",
+  category: "Brutalist Decks",
+  tags: deck.tags,
+  aspect: "16:9",
+  dimensions: { width: 1920, height: 1080 },
+  tier: deck.tier,
+  free: deck.tier === "free",
+  description: deck.description,
+  seoDescription: `${deck.title} - Professional 10-slide brutalist pitch deck template built with extreme-scaled typography and asymmetric grids.`,
+  getDoc: () => deck.getDoc(),
 }));
 
 // Convert graphics to manifest items
@@ -392,6 +410,7 @@ const RESUME_MANIFEST: TemplateManifestItem[] = RESUME_TEMPLATES.slice(0, 10).ma
 
 export const ALL_STUDIO_TEMPLATES: TemplateManifestItem[] = [
   ...PRESENTATION_MANIFEST,
+  ...BRUTALIST_MANIFEST,
   ...RESUME_MANIFEST,
   ...GRAPHIC_MANIFEST,
 ];
