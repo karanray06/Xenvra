@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { StartInspiredSection } from "@/components/home/start-inspired-section";
 import { CanvaFeaturesSection } from "@/components/home/canva-features-section";
+import { getAppBaseUrl } from "@/lib/env";
 
 // ===== Navbar =====
 function Navbar() {
@@ -38,7 +39,13 @@ function Navbar() {
             priority
           />
         </Link>
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center gap-7 md:flex">
+          <Link
+            href="/templates"
+            className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+          >
+            Templates
+          </Link>
           <a
             href="#features"
             className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
@@ -57,6 +64,12 @@ function Navbar() {
           >
             Pricing
           </a>
+          <Link
+            href="/blog"
+            className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+          >
+            Guides
+          </Link>
           <a
             href="#faq"
             className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
@@ -423,7 +436,7 @@ function FAQ() {
     },
     {
       q: "What payment methods do you accept?",
-      a: "We accept all UPI apps (Google Pay, PhonePe, Paytm, CRED, BHIM) via YouPI Gateway with 0% gateway fees. All prices are in INR. Plans are 30-day passes with no auto-renewal.",
+      a: "We accept all major payment methods including UPI apps (Google Pay, PhonePe, Paytm, CRED), QR codes, debit/credit cards, and netbanking via Razorpay. All prices are in INR (₹). Plans are 30-day non-renewing passes.",
     },
     {
       q: "Can I cancel anytime?",
@@ -466,11 +479,11 @@ function CTASection() {
     <section className="bg-gradient-to-br from-brand-900 via-brand-800 to-brand-900 py-20 sm:py-28">
       <div className="mx-auto max-w-screen-xl px-4 text-center sm:px-6 lg:px-8">
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-          Ready to build your resume?
+          Ready to design your career assets?
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-brand-200">
-          Start for free, no credit card needed. Your resume could be ready
-          in under 10 minutes.
+          Start for free, no credit card needed. Design pitch decks, viva presentations,
+          ATS resumes, and banners in minutes.
         </p>
         <Link
           href="/login"
@@ -508,6 +521,18 @@ function Footer() {
           </div>
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-text-tertiary">
             <Link
+              href="/templates"
+              className="transition-colors hover:text-text-secondary"
+            >
+              Templates
+            </Link>
+            <Link
+              href="/blog"
+              className="transition-colors hover:text-text-secondary"
+            >
+              Guides
+            </Link>
+            <Link
               href="/terms"
               className="transition-colors hover:text-text-secondary"
             >
@@ -543,8 +568,65 @@ function Footer() {
 
 // ===== Landing Page =====
 export default function LandingPage() {
+  const baseUrl = getAppBaseUrl();
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: "Xenvra",
+        alternateName: "Xenvra Studio",
+        url: baseUrl,
+        logo: `${baseUrl}/logos/xenvra-icon.svg`,
+        email: "xenvra.official@gmail.com",
+        sameAs: ["https://xenvraresume.vercel.app"],
+      },
+      {
+        "@type": "WebSite",
+        name: "Xenvra Studio",
+        url: baseUrl,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${baseUrl}/templates?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "Xenvra Studio",
+        applicationCategory: "DesignApplication",
+        operatingSystem: "Web",
+        offers: [
+          {
+            "@type": "Offer",
+            name: "Free Plan",
+            price: "0",
+            priceCurrency: "INR",
+          },
+          {
+            "@type": "Offer",
+            name: "Beginner Pass (30 Days)",
+            price: "29",
+            priceCurrency: "INR",
+          },
+          {
+            "@type": "Offer",
+            name: "Pro Pass (30 Days)",
+            price: "49",
+            priceCurrency: "INR",
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
       <main>
         <Hero />

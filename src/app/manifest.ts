@@ -2,9 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Xenvra — AI-Powered Resume Builder",
-    short_name: "Xenvra",
-    description: "Build professional, ATS-friendly resumes with AI assistance.",
+    name: "Xenvra Studio — Career Design Studio & Resume Builder",
+    short_name: "Xenvra Studio",
+    description:
+      "Design 10-slide pitch decks, viva presentations, ATS resumes, cover letters, and LinkedIn banners in minutes.",
     start_url: "/",
     display: "standalone",
     background_color: "#E6EEF4",
