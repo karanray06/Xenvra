@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useStudioStore } from "@/lib/studio/store";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { computeTextEffectStyles } from "@/lib/studio/text-effects";
 
 interface StudioPresenterProps {
   onExit: () => void;
@@ -87,22 +88,57 @@ export function StudioPresenter({ onExit }: StudioPresenterProps) {
                 }}
               >
                 {el.type === "text" && (
-                  <div
-                    className="w-full h-full whitespace-pre-wrap"
-                    style={{
-                      fontSize: `${el.fontSize}px`,
-                      fontFamily: el.fontFamily,
-                      fontWeight: el.fontWeight,
-                      color: el.color,
-                      textAlign: el.align,
-                      lineHeight: el.lineHeight,
-                      letterSpacing: `${el.letterSpacing}px`,
-                      textTransform: el.uppercase ? "uppercase" : "none",
-                      textDecoration: el.underline ? "underline" : "none",
-                    }}
-                  >
-                    {el.content}
-                  </div>
+                  el.effectType === "curve" ? (
+                    <div className="w-full h-full flex items-center justify-center select-none overflow-visible">
+                      <svg
+                        viewBox={`0 0 ${el.width} ${el.height}`}
+                        className="w-full h-full overflow-visible pointer-events-none"
+                      >
+                        <defs>
+                          <path
+                            id={`presenter-curve-${el.id}`}
+                            d={`M 10,${el.height * 0.75} Q ${el.width / 2},${
+                              el.height * 0.75 - ((el.effectOptions?.curveAngle ?? 65) * (el.height / 100))
+                            } ${el.width - 10},${el.height * 0.75}`}
+                            fill="none"
+                          />
+                        </defs>
+                        <text
+                          fill={el.color}
+                          fontSize={el.fontSize}
+                          fontFamily={el.fontFamily}
+                          fontWeight={el.fontWeight}
+                          letterSpacing={el.letterSpacing}
+                        >
+                          <textPath
+                            href={`#presenter-curve-${el.id}`}
+                            startOffset="50%"
+                            textAnchor="middle"
+                          >
+                            {el.content}
+                          </textPath>
+                        </text>
+                      </svg>
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full h-full whitespace-pre-wrap"
+                      style={{
+                        fontSize: `${el.fontSize}px`,
+                        fontFamily: el.fontFamily,
+                        fontWeight: el.fontWeight,
+                        color: el.color,
+                        textAlign: el.align,
+                        lineHeight: el.lineHeight,
+                        letterSpacing: `${el.letterSpacing}px`,
+                        textTransform: el.uppercase ? "uppercase" : "none",
+                        textDecoration: el.underline ? "underline" : "none",
+                        ...computeTextEffectStyles(el),
+                      }}
+                    >
+                      {el.content}
+                    </div>
+                  )
                 )}
 
                 {el.type === "shape" && (

@@ -16,9 +16,15 @@ import {
   BringToFront,
   SendToBack,
   ChevronDown,
+  Sparkles,
+  Play,
+  X,
 } from "lucide-react";
 
 import { ALL_BRAND_PALETTE_CATEGORIES } from "@/lib/studio/brand-palettes";
+import {
+  STUDIO_TEXT_EFFECT_PRESETS,
+} from "@/lib/studio/text-effects";
 
 const FONTS = [
   "Plus Jakarta Sans",
@@ -49,6 +55,8 @@ export function StudioPropertiesBar() {
   } = useStudioStore();
 
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isEffectsOpen, setIsEffectsOpen] = useState(false);
+  const [isAnimateOpen, setIsAnimateOpen] = useState(false);
   const [paletteTab, setPaletteTab] = useState<string>("all");
 
   const activePage = doc.pages[activePageIndex] || doc.pages[0];
@@ -170,6 +178,424 @@ export function StudioPropertiesBar() {
                   {align === "right" && <AlignRight className="h-3 w-3" />}
                 </button>
               ))}
+            </div>
+
+            {/* Effects Trigger */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsEffectsOpen(!isEffectsOpen);
+                  setIsAnimateOpen(false);
+                  setIsColorPickerOpen(false);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                  selected.effectType && selected.effectType !== "none"
+                    ? "bg-[#5A4032] text-white border-[#5A4032] shadow-xs"
+                    : isEffectsOpen
+                    ? "bg-[#E6EEF4] text-[#5A4032] border-[#5A4032]"
+                    : "bg-[#F6F1EE] text-[#241915] border-[#C9CCD1] hover:bg-white"
+                }`}
+              >
+                <Sparkles className="h-3 w-3" />
+                <span>Effects</span>
+                {selected.effectType && selected.effectType !== "none" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#ECEE81]" />
+                )}
+              </button>
+
+              {/* Effects Config Popover */}
+              {isEffectsOpen && (
+                <div className="absolute top-full left-0 mt-1 p-3 bg-white rounded-xl shadow-2xl border border-[#C9CCD1] z-50 w-80 max-h-[460px] overflow-y-auto space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#C9CCD1] pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-[#5A4032]" />
+                      <span className="text-xs font-bold text-[#241915]">Text Effects (12)</span>
+                    </div>
+                    <button
+                      onClick={() => setIsEffectsOpen(false)}
+                      className="p-1 rounded hover:bg-[#F6F1EE] text-[#8A8F98] hover:text-[#241915]"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Effect Types Grid */}
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                    <button
+                      onClick={() =>
+                        updateSelectedElements({ effectType: "none", effectOptions: undefined })
+                      }
+                      className={`p-2 rounded-lg border text-center transition-all ${
+                        !selected.effectType || selected.effectType === "none"
+                          ? "border-[#5A4032] bg-[#FAF8F5] font-bold text-[#5A4032]"
+                          : "border-[#C9CCD1] hover:bg-[#F6F1EE] text-[#5E534D]"
+                      }`}
+                    >
+                      None
+                    </button>
+                    {STUDIO_TEXT_EFFECT_PRESETS.map((p) => {
+                      const isSelected = selected.effectType === p.effectType;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            updateSelectedElements({
+                              effectType: p.effectType,
+                              effectOptions: p.effectOptions,
+                              animationType: p.animationType,
+                            });
+                          }}
+                          className={`p-1.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-0.5 ${
+                            isSelected
+                              ? "border-[#5A4032] bg-[#5A4032] text-white font-bold shadow-xs"
+                              : "border-[#C9CCD1] hover:bg-[#F6F1EE] text-[#241915]"
+                          }`}
+                        >
+                          <span className="text-[10px] leading-tight line-clamp-1">
+                            {p.name.replace("The ", "")}
+                          </span>
+                          <span
+                            className={`text-[8px] opacity-75 ${
+                              isSelected ? "text-white/80" : "text-[#8A8F98]"
+                            }`}
+                          >
+                            {p.badge}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Contextual Sliders */}
+                  {selected.effectType && selected.effectType !== "none" && (
+                    <div className="pt-2 border-t border-[#C9CCD1] space-y-2.5 text-[11px] text-[#241915]">
+                      <p className="font-bold text-[#5A4032]">
+                        Adjust:{" "}
+                        {
+                          STUDIO_TEXT_EFFECT_PRESETS.find(
+                            (p) => p.effectType === selected.effectType
+                          )?.name
+                        }
+                      </p>
+
+                      {/* Glitch controls */}
+                      {selected.effectType === "glitch" && (
+                        <div className="space-y-2 bg-[#F6F1EE] p-2 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span>Color Shift:</span>
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() =>
+                                  updateSelectedElements({
+                                    effectOptions: {
+                                      ...selected.effectOptions,
+                                      glitchShift: "pink-cyan",
+                                    },
+                                  })
+                                }
+                                className={`px-2 py-0.5 text-[9px] rounded font-semibold ${
+                                  selected.effectOptions?.glitchShift !== "red-blue"
+                                    ? "bg-[#5A4032] text-white"
+                                    : "bg-white border text-[#241915]"
+                                }`}
+                              >
+                                Pink / Cyan
+                              </button>
+                              <button
+                                onClick={() =>
+                                  updateSelectedElements({
+                                    effectOptions: {
+                                      ...selected.effectOptions,
+                                      glitchShift: "red-blue",
+                                    },
+                                  })
+                                }
+                                className={`px-2 py-0.5 text-[9px] rounded font-semibold ${
+                                  selected.effectOptions?.glitchShift === "red-blue"
+                                    ? "bg-[#5A4032] text-white"
+                                    : "bg-white border text-[#241915]"
+                                }`}
+                              >
+                                Red / Blue
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Intensity:</span>
+                            <input
+                              type="range"
+                              min="1"
+                              max="12"
+                              value={selected.effectOptions?.glitchIntensity || 4}
+                              onChange={(e) =>
+                                updateSelectedElements({
+                                  effectOptions: {
+                                    ...selected.effectOptions,
+                                    glitchIntensity: Number(e.target.value),
+                                  },
+                                })
+                              }
+                              className="w-28 accent-[#5A4032]"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Curve Arch controls */}
+                      {selected.effectType === "curve" && (
+                        <div className="space-y-2 bg-[#F6F1EE] p-2 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span>Curve Angle:</span>
+                            <span className="font-mono text-[10px] font-bold">
+                              {selected.effectOptions?.curveAngle || 65}°
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="-180"
+                            max="180"
+                            value={selected.effectOptions?.curveAngle || 65}
+                            onChange={(e) =>
+                              updateSelectedElements({
+                                effectOptions: {
+                                  ...selected.effectOptions,
+                                  curveAngle: Number(e.target.value),
+                                },
+                              })
+                            }
+                            className="w-full accent-[#5A4032]"
+                          />
+                        </div>
+                      )}
+
+                      {/* Neon controls */}
+                      {selected.effectType === "neon" && (
+                        <div className="space-y-2 bg-[#F6F1EE] p-2 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span>Glow Intensity:</span>
+                            <input
+                              type="range"
+                              min="2"
+                              max="15"
+                              value={selected.effectOptions?.neonIntensity || 8}
+                              onChange={(e) =>
+                                updateSelectedElements({
+                                  effectOptions: {
+                                    ...selected.effectOptions,
+                                    neonIntensity: Number(e.target.value),
+                                  },
+                                })
+                              }
+                              className="w-28 accent-[#5A4032]"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between pt-1">
+                            <span>Glow Color:</span>
+                            <div className="flex gap-1.5">
+                              {["#00F0FF", "#FF007F", "#FFE600", "#05FFA1", "#DCD3F2"].map(
+                                (hex) => (
+                                  <button
+                                    key={hex}
+                                    onClick={() =>
+                                      updateSelectedElements({
+                                        effectOptions: {
+                                          ...selected.effectOptions,
+                                          neonColor: hex,
+                                        },
+                                      })
+                                    }
+                                    style={{ backgroundColor: hex }}
+                                    className={`w-5 h-5 rounded-full border ${
+                                      selected.effectOptions?.neonColor === hex
+                                        ? "ring-2 ring-[#5A4032]"
+                                        : "border-[#C9CCD1]"
+                                    }`}
+                                  />
+                                )
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Hollow controls */}
+                      {selected.effectType === "hollow" && (
+                        <div className="space-y-2 bg-[#F6F1EE] p-2 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span>Outline Thickness:</span>
+                            <span className="font-mono text-[10px] font-bold">
+                              {selected.effectOptions?.hollowThickness || 2}px
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="1"
+                            max="8"
+                            value={selected.effectOptions?.hollowThickness || 2}
+                            onChange={(e) =>
+                              updateSelectedElements({
+                                effectOptions: {
+                                  ...selected.effectOptions,
+                                  hollowThickness: Number(e.target.value),
+                                },
+                              })
+                            }
+                            className="w-full accent-[#5A4032]"
+                          />
+                        </div>
+                      )}
+
+                      {/* Background Ribbon controls */}
+                      {selected.effectType === "background" && (
+                        <div className="space-y-2 bg-[#F6F1EE] p-2 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span>Ribbon Color:</span>
+                            <div className="flex gap-1.5">
+                              {["#ECEE81", "#FAF0E6", "#DCD3F2", "#E6EEF4", "#241915"].map(
+                                (hex) => (
+                                  <button
+                                    key={hex}
+                                    onClick={() =>
+                                      updateSelectedElements({
+                                        effectOptions: {
+                                          ...selected.effectOptions,
+                                          backgroundRibbonColor: hex,
+                                        },
+                                      })
+                                    }
+                                    style={{ backgroundColor: hex }}
+                                    className={`w-5 h-5 rounded-full border ${
+                                      selected.effectOptions?.backgroundRibbonColor === hex
+                                        ? "ring-2 ring-[#5A4032]"
+                                        : "border-[#C9CCD1]"
+                                    }`}
+                                  />
+                                )
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Roundness:</span>
+                            <input
+                              type="range"
+                              min="0"
+                              max="24"
+                              value={selected.effectOptions?.backgroundRibbonRoundness ?? 8}
+                              onChange={(e) =>
+                                updateSelectedElements({
+                                  effectOptions: {
+                                    ...selected.effectOptions,
+                                    backgroundRibbonRoundness: Number(e.target.value),
+                                  },
+                                })
+                              }
+                              className="w-24 accent-[#5A4032]"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Animate Trigger */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsAnimateOpen(!isAnimateOpen);
+                  setIsEffectsOpen(false);
+                  setIsColorPickerOpen(false);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all ${
+                  selected.animationType && selected.animationType !== "none"
+                    ? "bg-[#5A4032] text-white border-[#5A4032] shadow-xs"
+                    : isAnimateOpen
+                    ? "bg-[#E6EEF4] text-[#5A4032] border-[#5A4032]"
+                    : "bg-[#F6F1EE] text-[#241915] border-[#C9CCD1] hover:bg-white"
+                }`}
+              >
+                <Play className="h-3 w-3" />
+                <span>Animate</span>
+                {selected.animationType && selected.animationType !== "none" && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#ECEE81]" />
+                )}
+              </button>
+
+              {/* Animate Config Popover */}
+              {isAnimateOpen && (
+                <div className="absolute top-full left-0 mt-1 p-3 bg-white rounded-xl shadow-2xl border border-[#C9CCD1] z-50 w-72 space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#C9CCD1] pb-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Play className="h-3.5 w-3.5 text-[#5A4032]" />
+                      <span className="text-xs font-bold text-[#241915]">Text Animation</span>
+                    </div>
+                    <button
+                      onClick={() => setIsAnimateOpen(false)}
+                      className="p-1 rounded hover:bg-[#F6F1EE] text-[#8A8F98] hover:text-[#241915]"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                    {[
+                      { id: "none", label: "None" },
+                      { id: "typewriter", label: "Typewriter" },
+                      { id: "fade", label: "Fade" },
+                      { id: "slide", label: "Slide" },
+                      { id: "rise", label: "Rise" },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() =>
+                          updateSelectedElements({
+                            animationType: item.id as "none" | "typewriter" | "fade" | "slide" | "rise",
+                          })
+                        }
+                        className={`p-2 rounded-lg border font-medium transition-all ${
+                          (selected.animationType || "none") === item.id
+                            ? "border-[#5A4032] bg-[#5A4032] text-white font-bold"
+                            : "border-[#C9CCD1] hover:bg-[#F6F1EE] text-[#241915]"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selected.animationType === "typewriter" && (
+                    <div className="pt-2 border-t border-[#C9CCD1] space-y-2 bg-[#F6F1EE] p-2 rounded-lg text-[10px]">
+                      <div className="flex items-center justify-between">
+                        <span>Reveal Mode:</span>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => updateSelectedElements({ animationMode: "character" })}
+                            className={`px-2 py-0.5 rounded font-semibold ${
+                              (selected.animationMode || "character") === "character"
+                                ? "bg-[#5A4032] text-white"
+                                : "bg-white border text-[#241915]"
+                            }`}
+                          >
+                            Character
+                          </button>
+                          <button
+                            onClick={() => updateSelectedElements({ animationMode: "word" })}
+                            className={`px-2 py-0.5 rounded font-semibold ${
+                              selected.animationMode === "word"
+                                ? "bg-[#5A4032] text-white"
+                                : "bg-white border text-[#241915]"
+                            }`}
+                          >
+                            Word
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </>
         )}

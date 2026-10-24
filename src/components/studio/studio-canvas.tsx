@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import { useStudioStore } from "@/lib/studio/store";
 import type { StudioElement } from "@/lib/schemas/studio";
 import { Sparkles, Image as ImageIcon, QrCode, BarChart3 } from "lucide-react";
+import { computeTextEffectStyles } from "@/lib/studio/text-effects";
 
 export function StudioCanvas() {
   const {
@@ -247,6 +248,38 @@ export function StudioCanvas() {
                           letterSpacing: `${el.letterSpacing}px`,
                         }}
                       />
+                    ) : el.effectType === "curve" ? (
+                      <div className="w-full h-full flex items-center justify-center select-none overflow-visible">
+                        <svg
+                          viewBox={`0 0 ${el.width} ${el.height}`}
+                          className="w-full h-full overflow-visible pointer-events-none"
+                        >
+                          <defs>
+                            <path
+                              id={`curve-${el.id}`}
+                              d={`M 10,${el.height * 0.75} Q ${el.width / 2},${
+                                el.height * 0.75 - ((el.effectOptions?.curveAngle ?? 65) * (el.height / 100))
+                              } ${el.width - 10},${el.height * 0.75}`}
+                              fill="none"
+                            />
+                          </defs>
+                          <text
+                            fill={el.color}
+                            fontSize={el.fontSize}
+                            fontFamily={el.fontFamily}
+                            fontWeight={el.fontWeight}
+                            letterSpacing={el.letterSpacing}
+                          >
+                            <textPath
+                              href={`#curve-${el.id}`}
+                              startOffset="50%"
+                              textAnchor="middle"
+                            >
+                              {el.content}
+                            </textPath>
+                          </text>
+                        </svg>
+                      </div>
                     ) : (
                       <div
                         className="w-full h-full whitespace-pre-wrap select-none"
@@ -260,9 +293,15 @@ export function StudioCanvas() {
                           letterSpacing: `${el.letterSpacing}px`,
                           textTransform: el.uppercase ? "uppercase" : "none",
                           textDecoration: el.underline ? "underline" : "none",
+                          ...computeTextEffectStyles(el),
                         }}
                       >
                         {el.content}
+                        {(el.animationType === "typewriter" || el.effectType === "typewriter") && (
+                          <span className="inline-block animate-pulse font-normal ml-0.5 text-[#5A4032]">
+                            |
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>

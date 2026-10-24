@@ -9,6 +9,10 @@ import {
   STUDIO_ELEMENT_LIBRARY,
 } from "@/lib/studio/element-library";
 import {
+  STUDIO_TEXT_EFFECT_PRESETS,
+  computeTextEffectStyles,
+} from "@/lib/studio/text-effects";
+import {
   LayoutTemplate,
   Shapes,
   Type,
@@ -28,6 +32,8 @@ import {
   Image as ImageIcon,
   Search,
   UploadCloud,
+  Sparkles,
+  Info,
 } from "lucide-react";
 
 export function StudioSidebar() {
@@ -53,6 +59,9 @@ export function StudioSidebar() {
   const [brandCategory, setBrandCategory] = useState<string>("all");
   const [elementCategory, setElementCategory] = useState<string>("all");
   const [elementSearch, setElementSearch] = useState<string>("");
+  const [textFilterCategory, setTextFilterCategory] = useState<string>("all");
+  const [textSearch, setTextSearch] = useState<string>("");
+  const [activeHowToId, setActiveHowToId] = useState<string | null>(null);
   const [copiedHex, setCopiedHex] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -170,6 +179,27 @@ export function StudioSidebar() {
       const matchTag = item.tags.some((tag) => tag.toLowerCase().includes(query));
       const matchCat = item.categoryLabel.toLowerCase().includes(query);
       if (!matchName && !matchTag && !matchCat) return false;
+    }
+    return true;
+  });
+
+  const TEXT_EFFECT_CATEGORIES = [
+    { id: "all", label: "All (12)" },
+    { id: "Built-in", label: "Built-in" },
+    { id: "Layering Hack", label: "Layering" },
+    { id: "Animation Effect", label: "Animation" },
+    { id: "Frame Method", label: "Frame Mask" },
+    { id: "AI Texture", label: "AI Texture" },
+  ];
+
+  const filteredTextPresets = STUDIO_TEXT_EFFECT_PRESETS.filter((preset) => {
+    if (textFilterCategory !== "all" && preset.category !== textFilterCategory) return false;
+    if (textSearch.trim()) {
+      const q = textSearch.toLowerCase();
+      const matchName = preset.name.toLowerCase().includes(q);
+      const matchTag = preset.tagline.toLowerCase().includes(q);
+      const matchBadge = preset.badge.toLowerCase().includes(q);
+      if (!matchName && !matchTag && !matchBadge) return false;
     }
     return true;
   });
@@ -645,108 +675,264 @@ export function StudioSidebar() {
           {/* Panel: Text */}
           {activePanel === "text" && (
             <div className="space-y-4">
-              <button
-                onClick={() =>
-                  addElement({
-                    id: `text-${Date.now()}`,
-                    name: "Title Heading",
-                    type: "text",
-                    content: "Add a Big Heading",
-                    x: 100,
-                    y: 100,
-                    width: 600,
-                    height: 80,
-                    rotation: 0,
-                    opacity: 1,
-                    locked: false,
-                    hidden: false,
-                    zIndex: activePage.elements.length + 1,
-                    fontSize: 48,
-                    fontFamily: "Plus Jakarta Sans",
-                    fontWeight: 800,
-                    fontStyle: "normal",
-                    color: "#241915",
-                    align: "left",
-                    lineHeight: 1.2,
-                    letterSpacing: -0.5,
-                    underline: false,
-                    uppercase: false,
-                  })
-                }
-                className="w-full py-3 px-4 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors"
-              >
-                <p className="text-xl font-extrabold text-[#241915]">Add Heading</p>
-                <p className="text-[10px] text-[#8A8F98]">48pt · Plus Jakarta Sans</p>
-              </button>
+              {/* Search Bar for Text & Styles */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8A8F98]" />
+                <input
+                  type="text"
+                  placeholder="Search 12 text effects & styles..."
+                  value={textSearch}
+                  onChange={(e) => setTextSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-[#C9CCD1] bg-white placeholder-[#8A8F98] focus:outline-none focus:border-[#5A4032]"
+                />
+              </div>
 
-              <button
-                onClick={() =>
-                  addElement({
-                    id: `text-${Date.now()}`,
-                    name: "Subheading",
-                    type: "text",
-                    content: "Add a Subtitle or Section Lead",
-                    x: 100,
-                    y: 100,
-                    width: 500,
-                    height: 50,
-                    rotation: 0,
-                    opacity: 1,
-                    locked: false,
-                    hidden: false,
-                    zIndex: activePage.elements.length + 1,
-                    fontSize: 24,
-                    fontFamily: "Space Grotesk",
-                    fontWeight: 600,
-                    fontStyle: "normal",
-                    color: "#5A4032",
-                    align: "left",
-                    lineHeight: 1.3,
-                    letterSpacing: 0,
-                    underline: false,
-                    uppercase: false,
-                  })
-                }
-                className="w-full py-3 px-4 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors"
-              >
-                <p className="text-base font-semibold text-[#5A4032]">Add Subheading</p>
-                <p className="text-[10px] text-[#8A8F98]">24pt · Space Grotesk</p>
-              </button>
+              {/* Standard Typography Triggers */}
+              <div className="space-y-2">
+                <button
+                  onClick={() =>
+                    addElement({
+                      id: `text-${Date.now()}`,
+                      name: "Title Heading",
+                      type: "text",
+                      content: "Add a Big Heading",
+                      x: 100,
+                      y: 100,
+                      width: 600,
+                      height: 80,
+                      rotation: 0,
+                      opacity: 1,
+                      locked: false,
+                      hidden: false,
+                      zIndex: activePage.elements.length + 1,
+                      fontSize: 48,
+                      fontFamily: "Plus Jakarta Sans",
+                      fontWeight: 800,
+                      fontStyle: "normal",
+                      color: "#241915",
+                      align: "left",
+                      lineHeight: 1.2,
+                      letterSpacing: -0.5,
+                      underline: false,
+                      uppercase: false,
+                    })
+                  }
+                  className="w-full py-2.5 px-3 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="text-base font-extrabold text-[#241915]">Add Heading</p>
+                    <p className="text-[10px] text-[#8A8F98]">48pt · Plus Jakarta Sans</p>
+                  </div>
+                  <Plus className="h-4 w-4 text-[#8A8F98] group-hover:text-[#5A4032]" />
+                </button>
 
-              <button
-                onClick={() =>
-                  addElement({
-                    id: `text-${Date.now()}`,
-                    name: "Paragraph Body",
-                    type: "text",
-                    content:
-                      "Include rich descriptive paragraphs, bullet metrics, and highlights here.",
-                    x: 100,
-                    y: 100,
-                    width: 480,
-                    height: 80,
-                    rotation: 0,
-                    opacity: 1,
-                    locked: false,
-                    hidden: false,
-                    zIndex: activePage.elements.length + 1,
-                    fontSize: 16,
-                    fontFamily: "Inter",
-                    fontWeight: 400,
-                    fontStyle: "normal",
-                    color: "#241915",
-                    align: "left",
-                    lineHeight: 1.5,
-                    letterSpacing: 0,
-                    underline: false,
-                    uppercase: false,
-                  })
-                }
-                className="w-full py-3 px-4 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors"
-              >
-                <p className="text-sm font-normal text-[#241915]">Add Body Text</p>
-                <p className="text-[10px] text-[#8A8F98]">16pt · Inter</p>
-              </button>
+                <button
+                  onClick={() =>
+                    addElement({
+                      id: `text-${Date.now()}`,
+                      name: "Subheading",
+                      type: "text",
+                      content: "Add a Subtitle or Section Lead",
+                      x: 100,
+                      y: 100,
+                      width: 500,
+                      height: 50,
+                      rotation: 0,
+                      opacity: 1,
+                      locked: false,
+                      hidden: false,
+                      zIndex: activePage.elements.length + 1,
+                      fontSize: 24,
+                      fontFamily: "Space Grotesk",
+                      fontWeight: 600,
+                      fontStyle: "normal",
+                      color: "#5A4032",
+                      align: "left",
+                      lineHeight: 1.3,
+                      letterSpacing: 0,
+                      underline: false,
+                      uppercase: false,
+                    })
+                  }
+                  className="w-full py-2 px-3 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-[#5A4032]">Add Subheading</p>
+                    <p className="text-[10px] text-[#8A8F98]">24pt · Space Grotesk</p>
+                  </div>
+                  <Plus className="h-3.5 w-3.5 text-[#8A8F98] group-hover:text-[#5A4032]" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    addElement({
+                      id: `text-${Date.now()}`,
+                      name: "Paragraph Body",
+                      type: "text",
+                      content:
+                        "Include rich descriptive paragraphs, bullet metrics, and highlights here.",
+                      x: 100,
+                      y: 100,
+                      width: 480,
+                      height: 80,
+                      rotation: 0,
+                      opacity: 1,
+                      locked: false,
+                      hidden: false,
+                      zIndex: activePage.elements.length + 1,
+                      fontSize: 16,
+                      fontFamily: "Inter",
+                      fontWeight: 400,
+                      fontStyle: "normal",
+                      color: "#241915",
+                      align: "left",
+                      lineHeight: 1.5,
+                      letterSpacing: 0,
+                      underline: false,
+                      uppercase: false,
+                    })
+                  }
+                  className="w-full py-2 px-3 border border-[#C9CCD1] rounded-lg hover:bg-[#F6F1EE] text-left transition-colors flex items-center justify-between group"
+                >
+                  <div>
+                    <p className="text-xs font-normal text-[#241915]">Add Body Text</p>
+                    <p className="text-[9px] text-[#8A8F98]">16pt · Inter</p>
+                  </div>
+                  <Plus className="h-3.5 w-3.5 text-[#8A8F98] group-hover:text-[#5A4032]" />
+                </button>
+              </div>
+
+              {/* Section: Curated Text Effects & Styles */}
+              <div className="pt-2 border-t border-[#C9CCD1] space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-[#5A4032]" />
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#241915]">
+                      Text Effects & Styles ({filteredTextPresets.length})
+                    </p>
+                  </div>
+                </div>
+
+                {/* Filter Category Pills */}
+                <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+                  {TEXT_EFFECT_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setTextFilterCategory(cat.id)}
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-semibold whitespace-nowrap transition-colors ${
+                        textFilterCategory === cat.id
+                          ? "bg-[#5A4032] text-white"
+                          : "bg-[#F5F9FB] border border-[#C9CCD1] text-[#5E534D] hover:bg-[#E6EEF4]"
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Preset Cards List */}
+                <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+                  {filteredTextPresets.map((preset) => {
+                    const sampleEl = preset.createElement();
+                    const effectStyle = computeTextEffectStyles(sampleEl);
+                    const isHowToOpen = activeHowToId === preset.id;
+
+                    return (
+                      <div
+                        key={preset.id}
+                        className="p-2.5 rounded-xl border border-[#C9CCD1] hover:border-[#5A4032] bg-[#FAF8F5] hover:bg-white transition-all shadow-2xs group"
+                      >
+                        {/* Card Header */}
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold text-[#241915]">
+                            {preset.number}. {preset.name}
+                          </span>
+                          <span className="text-[8px] font-semibold px-1.5 py-0.5 rounded-full bg-[#E6EEF4] text-[#5A4032] uppercase">
+                            {preset.badge}
+                          </span>
+                        </div>
+
+                        {/* Visual Preview Box */}
+                        <div
+                          onClick={() =>
+                            addElement(
+                              preset.createElement(
+                                preset.sampleText,
+                                120,
+                                140,
+                                activePage.elements.length + 1
+                              )
+                            )
+                          }
+                          className="w-full h-16 rounded-lg bg-[#1B1917] border border-[#C9CCD1] flex items-center justify-center p-2 mb-2 cursor-pointer hover:scale-[1.02] transition-transform overflow-hidden relative"
+                          title={`Click to drop: ${preset.name}`}
+                        >
+                          <span
+                            style={{
+                              fontSize: `${Math.min(20, preset.defaultFontSize * 0.5)}px`,
+                              fontFamily: preset.defaultFontFamily,
+                              fontWeight: 800,
+                              color: preset.defaultColor,
+                              textAlign: "center",
+                              letterSpacing: "1px",
+                              ...effectStyle,
+                            }}
+                          >
+                            {preset.sampleText}
+                          </span>
+
+                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-white/90 text-[#241915] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-xs">
+                            <Plus className="h-3 w-3" />
+                          </div>
+                        </div>
+
+                        {/* Tagline Description */}
+                        <p className="text-[9px] text-[#5E534D] leading-relaxed mb-1.5">
+                          {preset.tagline}
+                        </p>
+
+                        {/* How-to Toggle & Action */}
+                        <div className="flex items-center justify-between pt-1 border-t border-[#E6EEF4] text-[9px]">
+                          <button
+                            onClick={() =>
+                              setActiveHowToId(isHowToOpen ? null : preset.id)
+                            }
+                            className="flex items-center gap-1 text-[#8A8F98] hover:text-[#5A4032] transition-colors"
+                          >
+                            <Info className="h-3 w-3" />
+                            <span>{isHowToOpen ? "Hide guide" : "How to do it"}</span>
+                          </button>
+                          <button
+                            onClick={() =>
+                              addElement(
+                                preset.createElement(
+                                  preset.sampleText,
+                                  120,
+                                  140,
+                                  activePage.elements.length + 1
+                                )
+                              )
+                            }
+                            className="font-semibold text-[#5A4032] hover:underline"
+                          >
+                            Apply to Canvas →
+                          </button>
+                        </div>
+
+                        {/* Expanded How-To Instructions */}
+                        {isHowToOpen && (
+                          <div className="mt-2 p-2 bg-[#F5F9FB] rounded-lg border border-[#C9CCD1] text-[9px] text-[#241915] space-y-1">
+                            <p className="font-bold text-[#5A4032]">
+                              Canva & Studio Workflow:
+                            </p>
+                            <p className="leading-normal">{preset.howToDo}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 

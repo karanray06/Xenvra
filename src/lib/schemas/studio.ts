@@ -110,6 +110,24 @@ const baseElementSchema = z.object({
   zIndex: z.number().optional(),
 });
 
+export const TEXT_EFFECT_TYPES = [
+  "none",
+  "glitch",
+  "curve",
+  "neon",
+  "duotone",
+  "typewriter",
+  "hollow",
+  "splice",
+  "mask",
+  "gradient",
+  "magic-morph",
+  "echo",
+  "background",
+] as const;
+
+export type TextEffectType = (typeof TEXT_EFFECT_TYPES)[number];
+
 // 1. Text Element
 export const textElementSchema = baseElementSchema.extend({
   type: z.literal("text"),
@@ -124,6 +142,42 @@ export const textElementSchema = baseElementSchema.extend({
   letterSpacing: z.number().min(-5).max(20).optional(),
   underline: z.boolean().optional(),
   uppercase: z.boolean().optional(),
+  // 12 Built-in Text Effects & Styling
+  effectType: z.enum(TEXT_EFFECT_TYPES).optional(),
+  effectOptions: z
+    .object({
+      glitchShift: z.enum(["pink-cyan", "red-blue"]).optional(),
+      glitchIntensity: z.number().min(1).max(20).optional(),
+      curveAngle: z.number().min(-360).max(360).optional(),
+      neonIntensity: z.number().min(1).max(20).optional(),
+      neonColor: z.string().optional(),
+      duotoneColor: z.string().optional(),
+      duotoneOffsetX: z.number().optional(),
+      duotoneOffsetY: z.number().optional(),
+      hollowThickness: z.number().min(1).max(20).optional(),
+      spliceThickness: z.number().min(1).max(20).optional(),
+      spliceColor: z.string().optional(),
+      spliceOffsetX: z.number().optional(),
+      spliceOffsetY: z.number().optional(),
+      maskImage: z.string().optional(),
+      gradientColors: z.array(z.string()).optional(),
+      gradientAngle: z.number().optional(),
+      morphTexture: z
+        .enum(["chrome", "gold-foil", "wood", "fabric", "water", "plastic"])
+        .optional(),
+      echoOffset: z.number().optional(),
+      echoDirection: z.enum(["left", "right", "up", "down"]).optional(),
+      echoColor: z.string().optional(),
+      backgroundRibbonColor: z.string().optional(),
+      backgroundRibbonRoundness: z.number().optional(),
+      backgroundRibbonSpread: z.number().optional(),
+      backgroundRibbonOpacity: z.number().optional(),
+    })
+    .optional(),
+  // Animation Effects
+  animationType: z.enum(["none", "typewriter", "fade", "slide", "rise"]).optional(),
+  animationSpeed: z.number().optional(),
+  animationMode: z.enum(["character", "word"]).optional(),
   // Data-binding to structured resume/profile field e.g. "contact.fullName"
   dataBinding: z.string().optional(),
   bind: z.string().optional(),

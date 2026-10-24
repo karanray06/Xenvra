@@ -48,6 +48,85 @@ function serializeElementToSVG(el: StudioElement): string {
       const textX =
         el.align === "center" ? el.x + el.width / 2 : el.align === "right" ? el.x + el.width : el.x;
 
+      if (el.effectType === "curve") {
+        const curveAngle = el.effectOptions?.curveAngle ?? 65;
+        return `<g ${transform} ${opacityAttr}>
+    <defs>
+      <path id="svg-curve-${el.id}" d="M ${el.x + 10},${el.y + el.height * 0.75} Q ${el.x + el.width / 2},${el.y + el.height * 0.75 - curveAngle * (el.height / 100)} ${el.x + el.width - 10},${el.y + el.height * 0.75}" fill="none" />
+    </defs>
+    <text font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${el.color}" letter-spacing="${el.letterSpacing}">
+      <textPath href="#svg-curve-${el.id}" startOffset="50%" text-anchor="middle">
+        ${safeText}
+      </textPath>
+    </text>
+  </g>`;
+      }
+
+      if (el.effectType === "background") {
+        const ribbonColor = el.effectOptions?.backgroundRibbonColor || "#ECEE81";
+        const radius = el.effectOptions?.backgroundRibbonRoundness ?? 8;
+        return `<g ${transform} ${opacityAttr}>
+    <rect x="${el.x}" y="${el.y}" width="${el.width}" height="${el.height}" rx="${radius}" fill="${ribbonColor}" />
+    <text x="${textX}" y="${el.y + el.fontSize * 1.1}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${el.color}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+  </g>`;
+      }
+
+      if (el.effectType === "hollow") {
+        const strokeWidth = el.effectOptions?.hollowThickness || 2;
+        return `<g ${transform} ${opacityAttr}>
+    <text x="${textX}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="none" stroke="${el.color}" stroke-width="${strokeWidth}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+  </g>`;
+      }
+
+      if (el.effectType === "splice") {
+        const strokeWidth = el.effectOptions?.spliceThickness || 2;
+        const shadowColor = el.effectOptions?.spliceColor || "#E07A5F";
+        const ox = el.effectOptions?.spliceOffsetX || 4;
+        const oy = el.effectOptions?.spliceOffsetY || 4;
+        return `<g ${transform} ${opacityAttr}>
+    <text x="${textX + ox}" y="${el.y + el.fontSize + oy}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${shadowColor}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+    <text x="${textX}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="none" stroke="${el.color}" stroke-width="${strokeWidth}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+  </g>`;
+      }
+
+      if (el.effectType === "duotone") {
+        const sColor = el.effectOptions?.duotoneColor || "#FF007F";
+        const ox = el.effectOptions?.duotoneOffsetX || -4;
+        const oy = el.effectOptions?.duotoneOffsetY || -4;
+        return `<g ${transform} ${opacityAttr}>
+    <text x="${textX + ox}" y="${el.y + el.fontSize + oy}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${sColor}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+    <text x="${textX}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${el.color}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
+      ${safeText}
+    </text>
+  </g>`;
+      }
+
+      if (el.effectType === "glitch") {
+        const shift = el.effectOptions?.glitchShift === "red-blue" ? ["#FF0000", "#0055FF"] : ["#FF007F", "#00FFFF"];
+        const intensity = el.effectOptions?.glitchIntensity || 4;
+        return `<g ${transform} ${opacityAttr}>
+    <text x="${textX - intensity}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${shift[1]}" text-anchor="${textAnchor}" opacity="0.8">
+      ${safeText}
+    </text>
+    <text x="${textX + intensity}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${shift[0]}" text-anchor="${textAnchor}" opacity="0.8">
+      ${safeText}
+    </text>
+    <text x="${textX}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${el.color}" text-anchor="${textAnchor}">
+      ${safeText}
+    </text>
+  </g>`;
+      }
+
       return `<g ${transform} ${opacityAttr}>
     <text x="${textX}" y="${el.y + el.fontSize}" font-family="${el.fontFamily}, sans-serif" font-size="${el.fontSize}" font-weight="${el.fontWeight}" fill="${el.color}" text-anchor="${textAnchor}" letter-spacing="${el.letterSpacing}">
       ${safeText}
@@ -128,7 +207,7 @@ export async function exportDocumentToPPTX(doc: StudioDocument, filename = "pres
       const h = el.height * scaleY;
 
       if (el.type === "text") {
-        slide.addText(el.content, {
+        const textOptions: pptxgen.TextPropsOptions = {
           x,
           y,
           w,
@@ -139,7 +218,11 @@ export async function exportDocumentToPPTX(doc: StudioDocument, filename = "pres
           bold: Number(el.fontWeight) >= 700,
           italic: el.fontStyle === "italic",
           align: el.align as "left" | "center" | "right" | "justify",
-        });
+        };
+        if (el.effectType === "background" && el.effectOptions?.backgroundRibbonColor) {
+          textOptions.fill = { color: el.effectOptions.backgroundRibbonColor.replace("#", "") };
+        }
+        slide.addText(el.content, textOptions);
       } else if (el.type === "shape" && el.shapeType === "rect") {
         slide.addShape(pptx.ShapeType.rect, {
           x,
